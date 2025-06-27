@@ -2,22 +2,45 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText, CheckCircle2, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Plus, Search, FileText, CheckCircle2, Clock, DollarSign, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
 import { Project } from '@/lib/types';
 import { formatDate, getProjectProgress } from '@/lib/utils';
+import { budgetManager } from '@/lib/budget';
 
 export default function Dashboard() {
+  const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewProjectForm, setShowNewProjectForm] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', description: '' });
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [budgetSummary, setBudgetSummary] = useState({
+    total: 0,
+    allocated: 0,
+    available: 0,
+    percentageUsed: 0
+  });
 
   useEffect(() => {
+    // Check onboarding status
+    const isOnboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
+    setOnboardingComplete(isOnboardingComplete);
+
+    if (!isOnboardingComplete) {
+      router.push('/onboarding');
+      return;
+    }
+
+    // Load budget data
+    budgetManager.loadProjectBudgets();
+    setBudgetSummary(budgetManager.getBudgetSummary());
+    
     setProjects(storage.getProjects());
-  }, []);
+  }, [router]);
 
   const filteredProjects = projects.filter(project =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -48,6 +71,17 @@ export default function Dashboard() {
     return 'bg-gray-100';
   };
 
+  if (!onboardingComplete) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <p className="text-muted-foreground">Redirecting to onboarding...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -69,6 +103,12 @@ export default function Dashboard() {
                   className="pl-10 pr-4 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
                 />
               </div>
+              <Link href="/budget">
+                <Button variant="outline" className="flex items-center space-x-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span>Budget</span>
+                </Button>
+              </Link>
               <Button
                 onClick={() => setShowNewProjectForm(true)}
                 className="flex items-center space-x-2"
@@ -83,6 +123,63 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Budget Overview Card */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-green-600" />
+                <CardTitle>Budget Overview</CardTitle>
+              </div>
+              <Link href="/budget">
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-4 w-4 mr-2" />
+                  Manage Budget
+                </Button>
+              </Link>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Total Budget</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ${budgetSummary.total.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Allocated</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  ${budgetSummary.allocated.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Available</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  ${budgetSummary.available.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-1">Usage</p>
+                <p className="text-2xl font-bold text-orange-600">
+                  {budgetSummary.percentageUsed.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    budgetSummary.percentageUsed < 50 ? 'bg-green-500' :
+                    budgetSummary.percentageUsed < 80 ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}
+                  style={{ width: `${Math.min(budgetSummary.percentageUsed, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* New Project Form */}
         {showNewProjectForm && (
           <Card className="mb-8">
@@ -205,49 +302,6 @@ export default function Dashboard() {
                 </Link>
               );
             })}
-          </div>
-        )}
-
-        {/* Stats */}
-        {projects.length > 0 && (
-          <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <FileText className="h-8 w-8 text-blue-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Total Projects</p>
-                    <p className="text-2xl font-bold text-foreground">{projects.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <CheckCircle2 className="h-8 w-8 text-green-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {projects.filter(p => p.completedSteps.length === 5).length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <Clock className="h-8 w-8 text-yellow-600" />
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">In Progress</p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {projects.filter(p => p.completedSteps.length > 0 && p.completedSteps.length < 5).length}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
       </main>

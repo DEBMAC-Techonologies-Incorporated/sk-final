@@ -3,7 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Circle, FileText, Save, Download, FileDown } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, FileText, Save, Download, FileDown, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
@@ -11,6 +11,8 @@ import { Project, ProjectStep, PROJECT_STEPS } from '@/lib/types';
 import { formatDate, getProjectProgress } from '@/lib/utils';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
+import BudgetAllocationForm from '@/components/budget/BudgetAllocationForm';
+import { budgetManager } from '@/lib/budget';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
@@ -24,6 +26,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [budgetAllocated, setBudgetAllocated] = useState(false);
 
     // Input field states
     const [documentTitle, setDocumentTitle] = useState('');
@@ -41,6 +44,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             }
             setProject(foundProject);
             setContent(foundProject.documents[activeStep].content);
+            
+            // Check if budget is allocated for this project
+            budgetManager.loadProjectBudgets();
+            const projectBudget = budgetManager.getProjectBudget(foundProject.id);
+            setBudgetAllocated(!!projectBudget);
+            
             setIsLoading(false);
         };
 
@@ -91,6 +100,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         }
     };
 
+    const handleBudgetAllocated = (amount: number, category: string) => {
+        setBudgetAllocated(true);
+        // You can add additional logic here if needed
+    };
+
     const generateDocument = () => {
         let generatedContent = '';
 
@@ -108,6 +122,19 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
         if (notes.trim()) {
             generatedContent += `<h2>Additional Notes</h2><p>${notes.trim().replace(/\n/g, '<br>')}</p>`;
+        }
+
+        // Add budget information if allocated
+        if (budgetAllocated && project) {
+            const projectBudget = budgetManager.getProjectBudget(project.id);
+            if (projectBudget) {
+                generatedContent += `<h2>Budget Allocation</h2>`;
+                generatedContent += `<p><strong>Amount:</strong> $${projectBudget.allocatedAmount.toLocaleString()}</p>`;
+                generatedContent += `<p><strong>Category:</strong> ${projectBudget.category}</p>`;
+                if (projectBudget.description) {
+                    generatedContent += `<p><strong>Description:</strong> ${projectBudget.description}</p>`;
+                }
+            }
         }
 
         if (!generatedContent) {
@@ -236,91 +263,127 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {!showEditor ? (
                     /* Input Fields View - Full Page */
-                    <Card className="max-w-2xl mx-auto">
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                                <span>{currentStepInfo?.label} - Document Setup</span>
-                                {currentDoc.isCompleted && (
-                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                )}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Fill in the details below to generate your {currentStepInfo?.label.toLowerCase()} document
-                            </p>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Input Fields Section */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
-                                        Document Title
-                                    </label>
-                                    <input
-                                        id="title"
-                                        type="text"
-                                        value={documentTitle}
-                                        onChange={(e) => setDocumentTitle(e.target.value)}
-                                        placeholder="Enter document title..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                    <div className="max-w-4xl mx-auto space-y-6">
+                        {/* Budget Allocation Section - Only for Planning Step */}
+                        {activeStep === 'planning' && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center space-x-2">
+                                        <DollarSign className="h-5 w-5 text-green-600" />
+                                        <span>Budget Allocation</span>
+                                        {budgetAllocated && (
+                                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                        )}
+                                    </CardTitle>
+                                    <p className="text-sm text-muted-foreground">
+                                        Allocate budget for this project from your available budget categories
+                                    </p>
+                                </CardHeader>
+                                <CardContent>
+                                    <BudgetAllocationForm
+                                        projectId={project.id}
+                                        onBudgetAllocated={handleBudgetAllocated}
                                     />
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Document Setup Section */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center space-x-2">
+                                    <span>{currentStepInfo?.label} - Document Setup</span>
+                                    {currentDoc.isCompleted && (
+                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    )}
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    Fill in the details below to generate your {currentStepInfo?.label.toLowerCase()} document
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Input Fields Section */}
+                                <div className="space-y-4">
+                                    <div>
+                                        <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
+                                            Document Title
+                                        </label>
+                                        <input
+                                            id="title"
+                                            type="text"
+                                            value={documentTitle}
+                                            onChange={(e) => setDocumentTitle(e.target.value)}
+                                            placeholder="Enter document title..."
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="summary" className="block text-sm font-medium text-foreground mb-2">
+                                            Summary
+                                        </label>
+                                        <textarea
+                                            id="summary"
+                                            rows={4}
+                                            value={summary}
+                                            onChange={(e) => setSummary(e.target.value)}
+                                            placeholder="Brief summary of this step..."
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="requirements" className="block text-sm font-medium text-foreground mb-2">
+                                            Key Requirements
+                                        </label>
+                                        <textarea
+                                            id="requirements"
+                                            rows={5}
+                                            value={requirements}
+                                            onChange={(e) => setRequirements(e.target.value)}
+                                            placeholder="List key requirements or points..."
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
+                                            Additional Notes
+                                        </label>
+                                        <textarea
+                                            id="notes"
+                                            rows={4}
+                                            value={notes}
+                                            onChange={(e) => setNotes(e.target.value)}
+                                            placeholder="Any additional notes or context..."
+                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                        />
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label htmlFor="summary" className="block text-sm font-medium text-foreground mb-2">
-                                        Summary
-                                    </label>
-                                    <textarea
-                                        id="summary"
-                                        rows={4}
-                                        value={summary}
-                                        onChange={(e) => setSummary(e.target.value)}
-                                        placeholder="Brief summary of this step..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
+                                {/* Generate Button */}
+                                <div className="pt-4 border-t">
+                                    <Button
+                                        className="w-full"
+                                        variant="default"
+                                        size="lg"
+                                        onClick={generateDocument}
+                                        disabled={activeStep === 'planning' && !budgetAllocated}
+                                    >
+                                        {activeStep === 'planning' && !budgetAllocated 
+                                            ? 'Allocate Budget First' 
+                                            : 'Generate Document'
+                                        }
+                                    </Button>
+                                    {activeStep === 'planning' && !budgetAllocated && (
+                                        <p className="text-sm text-muted-foreground mt-2 text-center">
+                                            You must allocate a budget before generating the planning document
+                                        </p>
+                                    )}
                                 </div>
-
-                                <div>
-                                    <label htmlFor="requirements" className="block text-sm font-medium text-foreground mb-2">
-                                        Key Requirements
-                                    </label>
-                                    <textarea
-                                        id="requirements"
-                                        rows={5}
-                                        value={requirements}
-                                        onChange={(e) => setRequirements(e.target.value)}
-                                        placeholder="List key requirements or points..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
-                                        Additional Notes
-                                    </label>
-                                    <textarea
-                                        id="notes"
-                                        rows={4}
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Any additional notes or context..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Generate Button */}
-                            <div className="pt-4 border-t">
-                                <Button
-                                    className="w-full"
-                                    variant="default"
-                                    size="lg"
-                                    onClick={generateDocument}
-                                >
-                                    Generate Document
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    </div>
                 ) : (
                     /* Document Editor View - Full Page */
                     <Card className="h-[calc(100vh-12rem)]">
