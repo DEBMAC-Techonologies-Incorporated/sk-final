@@ -199,7 +199,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                     </div>
                     {/* Budget Display */}
                     <div className="pb-4">
-                        <BudgetDisplay projectId={project.id} compact={true} />
+                        <BudgetDisplay projectId={project.id} compact={true} /> 
                     </div>
                 </div>
             </header>
