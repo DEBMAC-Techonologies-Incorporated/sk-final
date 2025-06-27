@@ -25,6 +25,22 @@ export default function Dashboard() {
     percentageUsed: 0
   });
 
+  const refreshBudgetSummary = () => {
+    const budgetData = budgetManager.loadBudgetData();
+    budgetManager.loadProjectBudgets();
+    
+    if (budgetData) {
+      setBudgetSummary(budgetManager.getBudgetSummary());
+    } else {
+      setBudgetSummary({
+        total: 0,
+        allocated: 0,
+        available: 0,
+        percentageUsed: 0
+      });
+    }
+  };
+
   useEffect(() => {
     // Check onboarding status
     const isOnboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
@@ -35,12 +51,24 @@ export default function Dashboard() {
       return;
     }
 
-    // Load budget data
-    budgetManager.loadProjectBudgets();
-    setBudgetSummary(budgetManager.getBudgetSummary());
-    
+    // Load budget data in proper order
+    refreshBudgetSummary();
     setProjects(storage.getProjects());
   }, [router]);
+
+  // Refresh budget summary when component becomes visible (returning from other pages)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        refreshBudgetSummary();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   const filteredProjects = projects.filter(project =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -140,42 +168,45 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Large Total Budget */}
+            <div className="text-center mb-6">
+              <p className="text-sm text-muted-foreground mb-2">Total Budget</p>
+              <p className="text-5xl font-bold text-green-600">
+                ${budgetSummary.total.toLocaleString()}
+              </p>
+            </div>
+
+            {/* Smaller Numbers Below */}
+            <div className="grid grid-cols-3 gap-4 mb-4">
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-1">Total Budget</p>
-                <p className="text-2xl font-bold text-green-600">
-                  ${budgetSummary.total.toLocaleString()}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-1">Allocated</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-xs text-muted-foreground mb-1">Allocated</p>
+                <p className="text-lg font-semibold text-blue-600">
                   ${budgetSummary.allocated.toLocaleString()}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-1">Available</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-xs text-muted-foreground mb-1">Available</p>
+                <p className="text-lg font-semibold text-gray-900">
                   ${budgetSummary.available.toLocaleString()}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-1">Usage</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-xs text-muted-foreground mb-1">Usage</p>
+                <p className="text-lg font-semibold text-orange-600">
                   {budgetSummary.percentageUsed.toFixed(1)}%
                 </p>
               </div>
             </div>
-            <div className="mt-4">
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className={`h-2 rounded-full transition-all duration-300 ${
-                    budgetSummary.percentageUsed < 50 ? 'bg-green-500' :
-                    budgetSummary.percentageUsed < 80 ? 'bg-yellow-500' : 'bg-red-500'
-                  }`}
-                  style={{ width: `${Math.min(budgetSummary.percentageUsed, 100)}%` }}
-                ></div>
-              </div>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  budgetSummary.percentageUsed < 50 ? 'bg-green-500' :
+                  budgetSummary.percentageUsed < 80 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${Math.min(budgetSummary.percentageUsed, 100)}%` }}
+              ></div>
             </div>
           </CardContent>
         </Card>

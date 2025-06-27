@@ -121,7 +121,7 @@ export class BudgetManager {
   getBudgetSummary() {
     const total = this.getTotalBudget();
     const allocated = this.projectBudgets.reduce((sum, budget) => sum + budget.allocatedAmount, 0);
-    const available = total - allocated;
+    const available = Math.max(0, total - allocated); // Ensure available is never negative
 
     return {
       total,
