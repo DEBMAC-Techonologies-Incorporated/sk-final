@@ -11,7 +11,11 @@ import { Project, ProjectStep, PROJECT_STEPS } from '@/lib/types';
 import { formatDate, getProjectProgress } from '@/lib/utils';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
-import PurchaseRequestForm, { PurchaseRequestFormData } from '@/components/project/steps/planning/PlanningForm';
+import { PlanningForm, PlanningFormData } from '@/components/project/steps/planning';
+import DVForm, { DVFormData } from '@/components/project/steps/dv/DVForm';
+import ApprovalForm, { ApprovalFormData } from '@/components/project/steps/approval/ApprovalForm';
+import ResolutionForm, { ResolutionFormData } from '@/components/project/steps/resolution/ResolutionForm';
+import WithdrawalForm, { WithdrawalFormData } from '@/components/project/steps/withdrawal/WithdrawalForm';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
@@ -83,7 +87,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         }
     };
 
-    const handleGenerateDocument = async (formData: PurchaseRequestFormData) => {
+    const handleGenerateDocument = async (formData: PlanningFormData | DVFormData | ApprovalFormData | ResolutionFormData | WithdrawalFormData) => {
         setIsGenerating(true);
 
         try {
@@ -92,7 +96,10 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    step: activeStep,
+                    formData: formData
+                }),
             });
 
             const data = await response.json();
@@ -228,12 +235,40 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {!showEditor ? (
-                    /* Purchase Request Form Component */
-                    <PurchaseRequestForm
-                        isCompleted={currentDoc.isCompleted}
-                        onGenerate={handleGenerateDocument}
-                        isGenerating={isGenerating}
-                    />
+                    /* Step Form Components */
+                    <div>
+                        {activeStep === 'planning' && (
+                            <PlanningForm
+                                isCompleted={currentDoc.isCompleted}
+                                onGenerate={handleGenerateDocument}
+                                isGenerating={isGenerating}
+                            />
+                        )}
+                        {activeStep === 'dv' && (
+                            <DVForm
+                                isCompleted={currentDoc.isCompleted}
+                                onGenerate={handleGenerateDocument}
+                            />
+                        )}
+                        {activeStep === 'approval' && (
+                            <ApprovalForm
+                                isCompleted={currentDoc.isCompleted}
+                                onGenerate={handleGenerateDocument}
+                            />
+                        )}
+                        {activeStep === 'resolution' && (
+                            <ResolutionForm
+                                isCompleted={currentDoc.isCompleted}
+                                onGenerate={handleGenerateDocument}
+                            />
+                        )}
+                        {activeStep === 'withdrawal' && (
+                            <WithdrawalForm
+                                isCompleted={currentDoc.isCompleted}
+                                onGenerate={handleGenerateDocument}
+                            />
+                        )}
+                    </div>
                 ) : (
                     /* Document Editor View - Full Page */
                     <Card className="h-[calc(100vh-12rem)]">
