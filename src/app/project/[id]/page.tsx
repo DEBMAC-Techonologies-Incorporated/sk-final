@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, FileText, Save, Download, FileDown } from 'lucide-react';
@@ -11,29 +11,26 @@ import { Project, ProjectStep, PROJECT_STEPS } from '@/lib/types';
 import { formatDate, getProjectProgress } from '@/lib/utils';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
+import StepFormSelector, { StepFormData } from '@/components/project/StepFormSelector';
+import { generateDocumentContent } from '@/lib/documentGenerator';
 
 interface ProjectPageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
     const router = useRouter();
+    const resolvedParams = use(params);
     const [project, setProject] = useState<Project | null>(null);
     const [activeStep, setActiveStep] = useState<ProjectStep>('planning');
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-
-    // Input field states
-    const [documentTitle, setDocumentTitle] = useState('');
-    const [summary, setSummary] = useState('');
-    const [requirements, setRequirements] = useState('');
-    const [notes, setNotes] = useState('');
     const [showEditor, setShowEditor] = useState(false);
 
     useEffect(() => {
         const loadProject = () => {
-            const foundProject = storage.getProject(params.id);
+            const foundProject = storage.getProject(resolvedParams.id);
             if (!foundProject) {
                 router.push('/');
                 return;
@@ -44,16 +41,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         };
 
         loadProject();
-    }, [params.id, router]);
+    }, [resolvedParams.id, router, activeStep]);
 
     useEffect(() => {
         if (project) {
             setContent(project.documents[activeStep].content);
-            // Clear input fields and reset to input view when switching steps
-            setDocumentTitle('');
-            setSummary('');
-            setRequirements('');
-            setNotes('');
+            // Reset to input view when switching steps
             setShowEditor(false);
         }
     }, [activeStep, project]);
@@ -90,29 +83,8 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         }
     };
 
-    const generateDocument = () => {
-        let generatedContent = '';
-
-        if (documentTitle.trim()) {
-            generatedContent += `<h1>${documentTitle.trim()}</h1>`;
-        }
-
-        if (summary.trim()) {
-            generatedContent += `<h2>Summary</h2><p>${summary.trim().replace(/\n/g, '<br>')}</p>`;
-        }
-
-        if (requirements.trim()) {
-            generatedContent += `<h2>Key Requirements</h2><p>${requirements.trim().replace(/\n/g, '<br>')}</p>`;
-        }
-
-        if (notes.trim()) {
-            generatedContent += `<h2>Additional Notes</h2><p>${notes.trim().replace(/\n/g, '<br>')}</p>`;
-        }
-
-        if (!generatedContent) {
-            generatedContent = `<h1>${currentStepInfo?.label} Document</h1><p>Please fill in the input fields and click Generate to create your document.</p>`;
-        }
-
+    const generateDocument = (formData: StepFormData) => {
+        const generatedContent = generateDocumentContent(activeStep, formData);
         setContent(generatedContent);
         setShowEditor(true);
     };
@@ -234,92 +206,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {!showEditor ? (
-                    /* Input Fields View - Full Page */
-                    <Card className="max-w-2xl mx-auto">
-                        <CardHeader>
-                            <CardTitle className="flex items-center space-x-2">
-                                <span>{currentStepInfo?.label} - Document Setup</span>
-                                {currentDoc.isCompleted && (
-                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                )}
-                            </CardTitle>
-                            <p className="text-sm text-muted-foreground">
-                                Fill in the details below to generate your {currentStepInfo?.label.toLowerCase()} document
-                            </p>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            {/* Input Fields Section */}
-                            <div className="space-y-4">
-                                <div>
-                                    <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
-                                        Document Title
-                                    </label>
-                                    <input
-                                        id="title"
-                                        type="text"
-                                        value={documentTitle}
-                                        onChange={(e) => setDocumentTitle(e.target.value)}
-                                        placeholder="Enter document title..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="summary" className="block text-sm font-medium text-foreground mb-2">
-                                        Summary
-                                    </label>
-                                    <textarea
-                                        id="summary"
-                                        rows={4}
-                                        value={summary}
-                                        onChange={(e) => setSummary(e.target.value)}
-                                        placeholder="Brief summary of this step..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="requirements" className="block text-sm font-medium text-foreground mb-2">
-                                        Key Requirements
-                                    </label>
-                                    <textarea
-                                        id="requirements"
-                                        rows={5}
-                                        value={requirements}
-                                        onChange={(e) => setRequirements(e.target.value)}
-                                        placeholder="List key requirements or points..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
-                                        Additional Notes
-                                    </label>
-                                    <textarea
-                                        id="notes"
-                                        rows={4}
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                        placeholder="Any additional notes or context..."
-                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Generate Button */}
-                            <div className="pt-4 border-t">
-                                <Button
-                                    className="w-full"
-                                    variant="default"
-                                    size="lg"
-                                    onClick={generateDocument}
-                                >
-                                    Generate Document
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <StepFormSelector
+                        activeStep={activeStep}
+                        isCompleted={currentDoc.isCompleted}
+                        onGenerate={generateDocument}
+                    />
                 ) : (
                     /* Document Editor View - Full Page */
                     <Card className="h-[calc(100vh-12rem)]">
