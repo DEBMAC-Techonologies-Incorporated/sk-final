@@ -1,6 +1,6 @@
 // Planning step
-export { PlanningForm } from './planning';
-export type { PlanningFormData } from './planning';
+export { default as PlanningForm } from './planning/PlanningForm';
+export type { PurchaseRequestFormData } from './planning/PlanningForm';
 
 // Approval step
 export { ApprovalForm } from './approval';

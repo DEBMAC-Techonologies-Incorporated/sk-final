@@ -1,14 +1,14 @@
 "use client";
 
 import { ProjectStep } from '@/lib/types';
-import PlanningForm, { PlanningFormData } from './steps/planning/PlanningForm';
+import PlanningForm, { PurchaseRequestFormData } from './steps/planning/PlanningForm';
 import ApprovalForm, { ApprovalFormData } from './steps/approval/ApprovalForm';
 import ResolutionForm, { ResolutionFormData } from './steps/resolution/ResolutionForm';
 import DVForm, { DVFormData } from './steps/dv/DVForm';
 import WithdrawalForm, { WithdrawalFormData } from './steps/withdrawal/WithdrawalForm';
 
 // Union type for all form data types
-export type StepFormData = PlanningFormData | ApprovalFormData | ResolutionFormData | DVFormData | WithdrawalFormData;
+export type StepFormData = PurchaseRequestFormData | ApprovalFormData | ResolutionFormData | DVFormData | WithdrawalFormData;
 
 interface StepFormSelectorProps {
     activeStep: ProjectStep;
