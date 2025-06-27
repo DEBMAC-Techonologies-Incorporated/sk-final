@@ -12,6 +12,8 @@ import { formatDate, getProjectProgress } from '@/lib/utils';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
 import PurchaseRequestForm, { PurchaseRequestFormData } from '@/components/project/steps/planning/PlanningForm';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import BudgetDisplay from '@/components/budget/BudgetDisplay';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
@@ -181,11 +183,16 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             <div className="text-sm text-muted-foreground">
                                 Progress: <span className="font-medium">{progress}%</span>
                             </div>
+                            <ThemeToggle />
                             <Button variant="outline" onClick={exportMarkdown}>
                                 <Download className="h-4 w-4 mr-2" />
                                 Export
                             </Button>
                         </div>
+                    </div>
+                    {/* Budget Display */}
+                    <div className="pb-4">
+                        <BudgetDisplay projectId={project.id} compact={true} />
                     </div>
                 </div>
             </header>
