@@ -394,7 +394,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => ExportUtils.exportPdf('editor-content-only', `${project?.title}-${currentStepInfo?.label}` || 'document')}
+                                        onClick={() => ExportUtils.exportPdf('rich-editor-content', `${project?.title}-${currentStepInfo?.label}` || 'document')}
                                     >
                                         <FileDown className="h-4 w-4 mr-2" />
                                         PDF

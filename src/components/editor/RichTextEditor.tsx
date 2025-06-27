@@ -146,12 +146,10 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
 
             {/* Editor Content */}
             <div className="flex-1 overflow-y-auto bg-white">
-                <div id="editor-content-only" className="h-full">
-                    <EditorContent
-                        editor={editor}
-                        className="h-full"
-                    />
-                </div>
+                <EditorContent
+                    editor={editor}
+                    className="h-full"
+                />
                 {!content && placeholder && (
                     <div className="absolute top-16 left-4 text-gray-400 pointer-events-none">
                         {placeholder}
