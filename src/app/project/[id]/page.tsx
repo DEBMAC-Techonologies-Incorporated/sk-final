@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Circle, FileText, Save, Download, FileDown } from 'lucide-react';
@@ -13,11 +13,12 @@ import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
 
 interface ProjectPageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
     const router = useRouter();
+    const resolvedParams = use(params);
     const [project, setProject] = useState<Project | null>(null);
     const [activeStep, setActiveStep] = useState<ProjectStep>('planning');
     const [content, setContent] = useState('');
@@ -33,7 +34,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
     useEffect(() => {
         const loadProject = () => {
-            const foundProject = storage.getProject(params.id);
+            const foundProject = storage.getProject(resolvedParams.id);
             if (!foundProject) {
                 router.push('/');
                 return;
@@ -44,7 +45,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         };
 
         loadProject();
-    }, [params.id, router]);
+    }, [resolvedParams.id, router, activeStep]);
 
     useEffect(() => {
         if (project) {
