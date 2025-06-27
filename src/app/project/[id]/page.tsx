@@ -24,6 +24,13 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
+    // Input field states
+    const [documentTitle, setDocumentTitle] = useState('');
+    const [summary, setSummary] = useState('');
+    const [requirements, setRequirements] = useState('');
+    const [notes, setNotes] = useState('');
+    const [showEditor, setShowEditor] = useState(false);
+
     useEffect(() => {
         const loadProject = () => {
             const foundProject = storage.getProject(params.id);
@@ -42,6 +49,12 @@ export default function ProjectPage({ params }: ProjectPageProps) {
     useEffect(() => {
         if (project) {
             setContent(project.documents[activeStep].content);
+            // Clear input fields and reset to input view when switching steps
+            setDocumentTitle('');
+            setSummary('');
+            setRequirements('');
+            setNotes('');
+            setShowEditor(false);
         }
     }, [activeStep, project]);
 
@@ -75,6 +88,37 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         if (updatedProject) {
             setProject(updatedProject);
         }
+    };
+
+    const generateDocument = () => {
+        let generatedContent = '';
+
+        if (documentTitle.trim()) {
+            generatedContent += `<h1>${documentTitle.trim()}</h1>`;
+        }
+
+        if (summary.trim()) {
+            generatedContent += `<h2>Summary</h2><p>${summary.trim().replace(/\n/g, '<br>')}</p>`;
+        }
+
+        if (requirements.trim()) {
+            generatedContent += `<h2>Key Requirements</h2><p>${requirements.trim().replace(/\n/g, '<br>')}</p>`;
+        }
+
+        if (notes.trim()) {
+            generatedContent += `<h2>Additional Notes</h2><p>${notes.trim().replace(/\n/g, '<br>')}</p>`;
+        }
+
+        if (!generatedContent) {
+            generatedContent = `<h1>${currentStepInfo?.label} Document</h1><p>Please fill in the input fields and click Generate to create your document.</p>`;
+        }
+
+        setContent(generatedContent);
+        setShowEditor(true);
+    };
+
+    const backToInputs = () => {
+        setShowEditor(false);
     };
 
     const exportMarkdown = () => {
@@ -189,90 +233,124 @@ export default function ProjectPage({ params }: ProjectPageProps) {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 h-[calc(100vh-12rem)]">
-                    {/* Left Side - Input Fields */}
-                    <div className="lg:col-span-4">
-                        <Card className="h-full">
-                            <CardHeader>
-                                <CardTitle className="flex items-center space-x-2">
-                                    <span>{currentStepInfo?.label} - Input Fields</span>
-                                    {currentDoc.isCompleted && (
-                                        <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                    )}
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    {currentStepInfo?.description}
-                                </p>
-                            </CardHeader>
-                            <CardContent className="space-y-4 h-full overflow-y-auto">
-                                {/* Input Fields Section */}
-                                <div className="space-y-4">
-                                    <div>
-                                        <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
-                                            Document Title
-                                        </label>
-                                        <input
-                                            id="title"
-                                            type="text"
-                                            placeholder="Enter document title..."
-                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="summary" className="block text-sm font-medium text-foreground mb-2">
-                                            Summary
-                                        </label>
-                                        <textarea
-                                            id="summary"
-                                            rows={3}
-                                            placeholder="Brief summary of this step..."
-                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="requirements" className="block text-sm font-medium text-foreground mb-2">
-                                            Key Requirements
-                                        </label>
-                                        <textarea
-                                            id="requirements"
-                                            rows={4}
-                                            placeholder="List key requirements or points..."
-                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
-                                            Additional Notes
-                                        </label>
-                                        <textarea
-                                            id="notes"
-                                            rows={3}
-                                            placeholder="Any additional notes or context..."
-                                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                                        />
-                                    </div>
+                {!showEditor ? (
+                    /* Input Fields View - Full Page */
+                    <Card className="max-w-2xl mx-auto">
+                        <CardHeader>
+                            <CardTitle className="flex items-center space-x-2">
+                                <span>{currentStepInfo?.label} - Document Setup</span>
+                                {currentDoc.isCompleted && (
+                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                )}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground">
+                                Fill in the details below to generate your {currentStepInfo?.label.toLowerCase()} document
+                            </p>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {/* Input Fields Section */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label htmlFor="title" className="block text-sm font-medium text-foreground mb-2">
+                                        Document Title
+                                    </label>
+                                    <input
+                                        id="title"
+                                        type="text"
+                                        value={documentTitle}
+                                        onChange={(e) => setDocumentTitle(e.target.value)}
+                                        placeholder="Enter document title..."
+                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                    />
                                 </div>
 
-                                {/* Generate Button */}
-                                <div className="pt-4 border-t">
+                                <div>
+                                    <label htmlFor="summary" className="block text-sm font-medium text-foreground mb-2">
+                                        Summary
+                                    </label>
+                                    <textarea
+                                        id="summary"
+                                        rows={4}
+                                        value={summary}
+                                        onChange={(e) => setSummary(e.target.value)}
+                                        placeholder="Brief summary of this step..."
+                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="requirements" className="block text-sm font-medium text-foreground mb-2">
+                                        Key Requirements
+                                    </label>
+                                    <textarea
+                                        id="requirements"
+                                        rows={5}
+                                        value={requirements}
+                                        onChange={(e) => setRequirements(e.target.value)}
+                                        placeholder="List key requirements or points..."
+                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label htmlFor="notes" className="block text-sm font-medium text-foreground mb-2">
+                                        Additional Notes
+                                    </label>
+                                    <textarea
+                                        id="notes"
+                                        rows={4}
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Any additional notes or context..."
+                                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Generate Button */}
+                            <div className="pt-4 border-t">
+                                <Button
+                                    className="w-full"
+                                    variant="default"
+                                    size="lg"
+                                    onClick={generateDocument}
+                                >
+                                    Generate Document
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ) : (
+                    /* Document Editor View - Full Page */
+                    <Card className="h-[calc(100vh-12rem)]">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <div className="flex items-center space-x-4">
                                     <Button
-                                        className="w-full"
-                                        variant="default"
-                                        size="lg"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={backToInputs}
                                     >
-                                        Generate Document
+                                        <ArrowLeft className="h-4 w-4 mr-2" />
+                                        Back to Inputs
                                     </Button>
+                                    <div>
+                                        <CardTitle>Document Editor</CardTitle>
+                                        <p className="text-sm text-muted-foreground mt-1">
+                                            Rich text editor - format your content like Google Docs
+                                        </p>
+                                    </div>
                                 </div>
+                                <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-muted-foreground">
+                                        {content.replace(/<[^>]*>/g, '').length} characters
+                                    </span>
 
-                                {/* Action Buttons */}
-                                <div className="pt-4 space-y-2">
+                                    {/* Action Buttons */}
                                     <Button
                                         variant={currentDoc.isCompleted ? "secondary" : "default"}
                                         onClick={toggleStepCompletion}
-                                        className="w-full"
+                                        size="sm"
                                     >
                                         {currentDoc.isCompleted ? (
                                             <>
@@ -282,7 +360,7 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                         ) : (
                                             <>
                                                 <Circle className="h-4 w-4 mr-2" />
-                                                Mark Complete
+                                                Complete
                                             </>
                                         )}
                                     </Button>
@@ -290,72 +368,51 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                                         onClick={handleSave}
                                         disabled={isSaving}
                                         variant="outline"
-                                        className="w-full"
+                                        size="sm"
                                     >
                                         <Save className="h-4 w-4 mr-2" />
-                                        {isSaving ? 'Saving...' : 'Save Document'}
+                                        {isSaving ? 'Saving...' : 'Save'}
+                                    </Button>
+
+                                    {/* Export Options */}
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => ExportUtils.exportMarkdown(content, `${project?.title}-${currentStepInfo?.label}` || 'document')}
+                                    >
+                                        <Download className="h-4 w-4 mr-2" />
+                                        MD
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => ExportUtils.exportDocx(content, `${project?.title}-${currentStepInfo?.label}` || 'document')}
+                                    >
+                                        <FileDown className="h-4 w-4 mr-2" />
+                                        DOCX
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => ExportUtils.exportPdf('rich-editor-content', `${project?.title}-${currentStepInfo?.label}` || 'document')}
+                                    >
+                                        <FileDown className="h-4 w-4 mr-2" />
+                                        PDF
                                     </Button>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Right Side - Rich Text Document Editor */}
-                    <div className="lg:col-span-8">
-                        <Card className="h-full">
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <CardTitle>Document Editor</CardTitle>
-                                        <p className="text-sm text-muted-foreground mt-1">
-                                            Rich text editor - format your content like Google Docs
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <span className="text-xs text-muted-foreground">
-                                            {content.replace(/<[^>]*>/g, '').length} characters
-                                        </span>
-
-                                        {/* Export Options */}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => ExportUtils.exportMarkdown(content, `${project?.title}-${currentStepInfo?.label}` || 'document')}
-                                        >
-                                            <Download className="h-4 w-4 mr-2" />
-                                            MD
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => ExportUtils.exportDocx(content, `${project?.title}-${currentStepInfo?.label}` || 'document')}
-                                        >
-                                            <FileDown className="h-4 w-4 mr-2" />
-                                            DOCX
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => ExportUtils.exportPdf('rich-editor-content', `${project?.title}-${currentStepInfo?.label}` || 'document')}
-                                        >
-                                            <FileDown className="h-4 w-4 mr-2" />
-                                            PDF
-                                        </Button>
-                                    </div>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="h-full p-0">
-                                <div id="rich-editor-content" className="h-full">
-                                    <RichTextEditor
-                                        content={content}
-                                        onChange={setContent}
-                                        placeholder={`Write your ${currentStepInfo?.label.toLowerCase()} documentation here...\n\nUse the toolbar above to format your text with headings, bold, italic, lists, and more.`}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="h-full p-0">
+                            <div id="rich-editor-content" className="h-full">
+                                <RichTextEditor
+                                    content={content}
+                                    onChange={setContent}
+                                    placeholder={`Write your ${currentStepInfo?.label.toLowerCase()} documentation here...\n\nUse the toolbar above to format your text with headings, bold, italic, lists, and more.`}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
             </main>
         </div>
     );
