@@ -4,7 +4,9 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export class ExportUtils {
-    // Convert HTML to Markdown
+    /**
+     * Convert HTML to Markdown format
+     */
     static htmlToMarkdown(html: string): string {
         let markdown = html;
 
@@ -51,58 +53,31 @@ export class ExportUtils {
         return markdown;
     }
 
-    // Export as Markdown
+    /**
+     * Export content as Markdown file
+     */
     static exportMarkdown(content: string, filename: string) {
         const markdown = this.htmlToMarkdown(content);
         const blob = new Blob([markdown], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.md`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        this.downloadFile(blob, `${filename}.md`);
     }
 
-    // Export as DOCX (simplified - creates an HTML file that Word can open)
+    /**
+     * Export content as Word-compatible HTML document
+     */
     static exportDocx(content: string, filename: string) {
-        const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${filename}</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; margin: 40px; }
-            h1, h2, h3, h4, h5, h6 { color: #333; }
-            p { margin-bottom: 16px; }
-            ul, ol { margin-bottom: 16px; }
-            blockquote { margin: 20px 0; padding: 10px 20px; background: #f9f9f9; border-left: 4px solid #ccc; }
-          </style>
-        </head>
-        <body>
-          ${content}
-        </body>
-      </html>
-    `;
-
-        const blob = new Blob([htmlContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${filename}.docx`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const htmlContent = this.createWordCompatibleHtml(content, filename);
+        const blob = new Blob([htmlContent], { type: 'application/msword' });
+        this.downloadFile(blob, `${filename}.doc`);
     }
 
-    // Export as PDF
+    /**
+     * Export element as PDF
+     */
     static async exportPdf(elementId: string, filename: string) {
         const element = document.getElementById(elementId);
         if (!element) {
-            console.error('Element not found for PDF export');
+            console.error(`Element with ID '${elementId}' not found for PDF export`);
             return;
         }
 
@@ -115,16 +90,19 @@ export class ExportUtils {
 
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF();
+            
+            // A4 dimensions in mm
             const imgWidth = 210;
             const pageHeight = 295;
             const imgHeight = (canvas.height * imgWidth) / canvas.width;
             let heightLeft = imgHeight;
-
             let position = 0;
 
+            // Add first page
             pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
             heightLeft -= pageHeight;
 
+            // Add additional pages if content is longer than one page
             while (heightLeft >= 0) {
                 position = heightLeft - imgHeight;
                 pdf.addPage();
@@ -137,4 +115,150 @@ export class ExportUtils {
             console.error('Error generating PDF:', error);
         }
     }
-} 
+
+    /**
+     * Create HTML content that Word can properly import
+     */
+    private static createWordCompatibleHtml(content: string, filename: string): string {
+        return `<!DOCTYPE html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" 
+      xmlns:w="urn:schemas-microsoft-com:office:word" 
+      xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+    <meta charset="utf-8">
+    <meta name="ProgId" content="Word.Document">
+    <meta name="Generator" content="Microsoft Word 15">
+    <meta name="Originator" content="Microsoft Word 15">
+    <title>${filename}</title>
+    <!--[if gte mso 9]><xml>
+    <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotPromptForConvert/>
+        <w:DoNotRelyOnCSS/>
+        <w:DoNotSaveAsSingleFile/>
+    </w:WordDocument>
+    </xml><![endif]-->
+    <style>
+        @page {
+            size: 8.5in 11in;
+            margin: 1in;
+        }
+        
+        body {
+            font-family: "Times New Roman", serif;
+            font-size: 12pt;
+            line-height: 1.15;
+            margin: 0;
+            padding: 0;
+        }
+        
+        h1 {
+            font-size: 16pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        h2 {
+            font-size: 14pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        h3 {
+            font-size: 13pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        h4 {
+            font-size: 12pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        h5 {
+            font-size: 11pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        h6 {
+            font-size: 10pt;
+            font-weight: bold;
+            margin: 12pt 0 6pt 0;
+            color: #000;
+        }
+        
+        p {
+            margin: 6pt 0;
+            text-align: left;
+        }
+        
+        ul, ol {
+            margin: 6pt 0;
+            padding-left: 36pt;
+        }
+        
+        li {
+            margin: 3pt 0;
+        }
+        
+        strong, b {
+            font-weight: bold;
+        }
+        
+        em, i {
+            font-style: italic;
+        }
+        
+        blockquote {
+            margin: 12pt 0;
+            padding: 6pt 12pt;
+            border-left: 3pt solid #ccc;
+            background-color: #f9f9f9;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 12pt 0;
+        }
+        
+        td, th {
+            border: 1pt solid #000;
+            padding: 6pt;
+            text-align: left;
+        }
+        
+        th {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    ${content}
+</body>
+</html>`;
+    }
+
+    /**
+     * Helper method to download a blob as a file
+     */
+    private static downloadFile(blob: Blob, filename: string) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+}
