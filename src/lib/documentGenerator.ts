@@ -1,6 +1,6 @@
 import { ProjectStep, PROJECT_STEPS } from './types';
 import type { StepFormData } from '@/components/project/StepFormSelector';
-import type { PlanningFormData } from '@/components/project/steps/planning/PlanningForm';
+import type { PurchaseRequestFormData } from '@/components/project/steps/planning/PlanningForm';
 import type { ApprovalFormData } from '@/components/project/steps/approval/ApprovalForm';
 import type { ResolutionFormData } from '@/components/project/steps/resolution/ResolutionForm';
 import type { DVFormData } from '@/components/project/steps/dv/DVForm';
@@ -14,21 +14,39 @@ export function generateDocumentContent(activeStep: ProjectStep, formData: StepF
 
     switch (activeStep) {
         case 'planning': {
-            const data = formData as PlanningFormData;
-            if (data.projectScope.trim()) {
-                generatedContent += `<h2>Project Scope</h2><p>${data.projectScope.trim().replace(/\n/g, '<br>')}</p>`;
+            const data = formData as PurchaseRequestFormData;
+            if (data.activityName.trim()) {
+                generatedContent += `<h2>Activity Name</h2><p>${data.activityName.trim().replace(/\n/g, '<br>')}</p>`;
             }
-            if (data.stakeholders.trim()) {
-                generatedContent += `<h2>Key Stakeholders</h2><p>${data.stakeholders.trim().replace(/\n/g, '<br>')}</p>`;
+            if (data.activityDescription.trim()) {
+                generatedContent += `<h2>Activity Description</h2><p>${data.activityDescription.trim().replace(/\n/g, '<br>')}</p>`;
             }
-            if (data.timeline.trim()) {
-                generatedContent += `<h2>Project Timeline</h2><p>${data.timeline.trim().replace(/\n/g, '<br>')}</p>`;
+            if (data.targetBeneficiaries.trim()) {
+                generatedContent += `<h2>Target Beneficiaries</h2><p>${data.targetBeneficiaries.trim().replace(/\n/g, '<br>')}</p>`;
             }
-            if (data.budget.trim()) {
-                generatedContent += `<h2>Budget & Resources</h2><p>${data.budget.trim().replace(/\n/g, '<br>')}</p>`;
+            if (data.purchaseItems.length > 0) {
+                generatedContent += `<h2>Itemized Procurement List</h2>`;
+                generatedContent += `<table>`;
+                generatedContent += `<tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total Price</th></tr>`;
+                data.purchaseItems.forEach(item => {
+                    generatedContent += `<tr><td>${item.description}</td><td>${item.quantity}</td><td>${item.estimatedUnitPrice}</td><td>${item.estimatedTotalPrice}</td></tr>`;
+                });
+                generatedContent += `</table>`;
             }
-            if (data.risks.trim()) {
-                generatedContent += `<h2>Initial Risk Assessment</h2><p>${data.risks.trim().replace(/\n/g, '<br>')}</p>`;
+            if (data.totalPRAmount.trim()) {
+                generatedContent += `<h2>Total PR Amount</h2><p>${data.totalPRAmount.trim().replace(/\n/g, '<br>')}</p>`;
+            }
+            if (data.responsibleCommittee.trim()) {
+                generatedContent += `<h2>Committee Responsible</h2><p>${data.responsibleCommittee.trim().replace(/\n/g, '<br>')}</p>`;
+            }
+            if (data.relatedPR.trim()) {
+                generatedContent += `<h2>Related PR</h2><p>${data.relatedPR.trim().replace(/\n/g, '<br>')}</p>`;
+            }
+            if (data.authorizer.trim()) {
+                generatedContent += `<h2>Authorizer</h2><p>${data.authorizer.trim().replace(/\n/g, '<br>')}</p>`;
+            }
+            if (data.budgetAvailabilityConfirmed) {
+                generatedContent += `<h2>Budget Availability Confirmed</h2><p>${data.budgetAvailabilityConfirmed ? 'Yes' : 'No'}</p>`;
             }
             break;
         }
