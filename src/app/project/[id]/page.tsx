@@ -11,26 +11,27 @@ import { Project, ProjectStep, PROJECT_STEPS } from '@/lib/types';
 import { formatDate, getProjectProgress } from '@/lib/utils';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 import { ExportUtils } from '@/lib/exportUtils';
-import StepFormSelector, { StepFormData } from '@/components/project/StepFormSelector';
-import { generateDocumentContent } from '@/lib/documentGenerator';
+import PurchaseRequestForm, { PurchaseRequestFormData } from '@/components/project/steps/planning/PlanningForm';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
 }
 
 export default function ProjectPage({ params }: ProjectPageProps) {
+    // Unwrap the params Promise
+    const { id } = use(params);
     const router = useRouter();
-    const resolvedParams = use(params);
     const [project, setProject] = useState<Project | null>(null);
     const [activeStep, setActiveStep] = useState<ProjectStep>('planning');
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [showEditor, setShowEditor] = useState(false);
 
     useEffect(() => {
         const loadProject = () => {
-            const foundProject = storage.getProject(resolvedParams.id);
+            const foundProject = storage.getProject(id);
             if (!foundProject) {
                 router.push('/');
                 return;
@@ -41,12 +42,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         };
 
         loadProject();
-    }, [resolvedParams.id, router, activeStep]);
+    }, [id, router]);
 
     useEffect(() => {
         if (project) {
             setContent(project.documents[activeStep].content);
-            // Reset to input view when switching steps
             setShowEditor(false);
         }
     }, [activeStep, project]);
@@ -83,10 +83,32 @@ export default function ProjectPage({ params }: ProjectPageProps) {
         }
     };
 
-    const generateDocument = (formData: StepFormData) => {
-        const generatedContent = generateDocumentContent(activeStep, formData);
-        setContent(generatedContent);
-        setShowEditor(true);
+    const handleGenerateDocument = async (formData: PurchaseRequestFormData) => {
+        setIsGenerating(true);
+
+        try {
+            const response = await fetch('/api/generate-document', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setContent(data.content);
+                setShowEditor(true);
+            } else {
+                alert('Failed to generate document: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error generating document:', error);
+            alert('An error occurred while generating the document. Please try again.');
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const backToInputs = () => {
@@ -206,10 +228,11 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {!showEditor ? (
-                    <StepFormSelector
-                        activeStep={activeStep}
+                    /* Purchase Request Form Component */
+                    <PurchaseRequestForm
                         isCompleted={currentDoc.isCompleted}
-                        onGenerate={generateDocument}
+                        onGenerate={handleGenerateDocument}
+                        isGenerating={isGenerating}
                     />
                 ) : (
                     /* Document Editor View - Full Page */
@@ -307,4 +330,4 @@ export default function ProjectPage({ params }: ProjectPageProps) {
             </main>
         </div>
     );
-} 
+}
