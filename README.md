@@ -1,4 +1,4 @@
-# SK Projects Management System by DEBMAC
+# SK Projects Management System by DEBMAC TEAM
 
 A streamlined Next.js application designed to manage SK Projects through a structured 5-step workflow process, providing teams with clear documentation and progress tracking capabilities.
 
