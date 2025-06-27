@@ -16,6 +16,8 @@ import DVForm, { DVFormData } from '@/components/project/steps/dv/DVForm';
 import ApprovalForm, { ApprovalFormData } from '@/components/project/steps/approval/ApprovalForm';
 import ResolutionForm, { ResolutionFormData } from '@/components/project/steps/resolution/ResolutionForm';
 import WithdrawalForm, { WithdrawalFormData } from '@/components/project/steps/withdrawal/WithdrawalForm';
+import BudgetDisplay from '@/components/budget/BudgetDisplay';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
