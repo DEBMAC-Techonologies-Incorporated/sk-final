@@ -8,6 +8,9 @@ interface BudgetItem {
   category: string;
   amount: number;
   description?: string;
+  committee_responsible?: string;
+  committee_oversight?: string;
+  abyip_ppa_activity?: string;
 }
 
 interface BudgetData {
@@ -74,7 +77,7 @@ export default function OnboardingPage() {
     const lines = csvText.trim().split('\n');
     const headers = lines[0].split(',').map(h => h.trim());
     
-    // Expected headers: category,amount,description (optional)
+    // Expected headers: category,amount,description (optional), committee_responsible (optional), committee_oversight (optional), abyip_ppa_activity (optional)
     if (!headers.includes('category') || !headers.includes('amount')) {
       throw new Error('CSV must have "category" and "amount" columns');
     }
@@ -82,6 +85,9 @@ export default function OnboardingPage() {
     const categoryIndex = headers.indexOf('category');
     const amountIndex = headers.indexOf('amount');
     const descriptionIndex = headers.indexOf('description');
+    const committeeIndex = headers.indexOf('committee_responsible');
+    const committeeOversightIndex = headers.indexOf('committee_oversight');
+    const abyipPpaActivityIndex = headers.indexOf('abyip_ppa_activity');
 
     const items: BudgetItem[] = [];
     let totalBudget = 0;
@@ -97,7 +103,10 @@ export default function OnboardingPage() {
       const item: BudgetItem = {
         category: values[categoryIndex],
         amount: amount,
-        description: descriptionIndex >= 0 ? values[descriptionIndex] : undefined
+        description: descriptionIndex >= 0 ? values[descriptionIndex] : undefined,
+        committee_responsible: committeeIndex >= 0 ? values[committeeIndex] : undefined,
+        committee_oversight: committeeOversightIndex >= 0 ? values[committeeOversightIndex] : undefined,
+        abyip_ppa_activity: abyipPpaActivityIndex >= 0 ? values[abyipPpaActivityIndex] : undefined
       };
 
       items.push(item);
@@ -133,29 +142,30 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-950 flex items-center justify-center p-4">
+      <div className="max-w-2xl w-full bg-card rounded-2xl shadow-xl p-8 border border-border">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <DollarSign className="w-8 h-8 text-blue-600" />
+          <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <DollarSign className="w-8 h-8 text-blue-600 dark:text-blue-400" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to SK Projects</h1>
-          <p className="text-gray-600">Let's set up your budget to get started</p>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to SK Projects</h1>
+          <p className="text-muted-foreground">Set up your Sangguniang Kabataan budget aligned with PPAs</p>
         </div>
 
         {!success ? (
           <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="font-semibold text-blue-900 mb-2">Budget Requirements</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
-                <li>• Total budget amount</li>
-                <li>• Itemized breakdown of budget categories</li>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800">
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">SK Budget Requirements</h3>
+              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                <li>• Total budget amount aligned with SK PPAs</li>
+                <li>• Itemized breakdown of budget categories (PPA 1.1, 1.2, 2.1, etc.)</li>
+                <li>• Committee responsible for each budget cluster</li>
                 <li>• Optional descriptions for each category</li>
                 <li>• Supported formats: CSV, JSON</li>
               </ul>
             </div>
 
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
+            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
               <input
                 type="file"
                 accept=".csv,.json"
@@ -168,18 +178,18 @@ export default function OnboardingPage() {
                 htmlFor="file-upload"
                 className="cursor-pointer flex flex-col items-center space-y-4"
               >
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
                   {isUploading ? (
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   ) : (
-                    <Upload className="w-8 h-8 text-gray-400" />
+                    <Upload className="w-8 h-8 text-muted-foreground" />
                   )}
                 </div>
                 <div>
-                  <p className="text-lg font-medium text-gray-900">
+                  <p className="text-lg font-medium text-foreground">
                     {isUploading ? 'Processing...' : 'Upload Budget File'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Drag and drop or click to browse
                   </p>
                 </div>
@@ -189,7 +199,7 @@ export default function OnboardingPage() {
             <div className="text-center">
               <button
                 onClick={downloadTemplate}
-                className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center justify-center mx-auto space-x-1"
+                className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium flex items-center justify-center mx-auto space-x-1"
               >
                 <FileText className="w-4 h-4" />
                 <span>Download CSV Template</span>
@@ -197,27 +207,36 @@ export default function OnboardingPage() {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3 dark:bg-red-900/20 dark:border-red-800">
+                <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0 dark:text-red-400" />
                 <div>
-                  <p className="text-red-800 font-medium">Upload Error</p>
-                  <p className="text-red-700 text-sm">{error}</p>
+                  <p className="text-red-800 font-medium dark:text-red-200">Upload Error</p>
+                  <p className="text-red-700 text-sm dark:text-red-300">{error}</p>
                 </div>
               </div>
             )}
           </div>
         ) : (
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-xl font-semibold text-gray-900">Budget Uploaded Successfully!</h3>
-            <div className="bg-gray-50 rounded-lg p-4 text-left">
-              <p className="text-sm text-gray-600 mb-2">Budget Summary:</p>
+            <h3 className="text-xl font-semibold text-foreground">Budget Uploaded Successfully!</h3>
+            <div className="bg-muted rounded-lg p-4 text-left">
+              <p className="text-sm text-muted-foreground mb-2">Budget Summary:</p>
               <p className="font-medium">Total Budget: ${budgetData?.totalBudget.toLocaleString()}</p>
-              <p className="text-sm text-gray-600">{budgetData?.items.length} categories</p>
+              <p className="text-sm text-muted-foreground">{budgetData?.items.length} PPA categories</p>
+              {budgetData?.items.some(item => item.committee_responsible) && (
+                <p className="text-sm text-muted-foreground mt-1">✓ Committee assignments included</p>
+              )}
+              {budgetData?.items.some(item => item.committee_oversight) && (
+                <p className="text-sm text-muted-foreground mt-1">✓ Oversight assignments included</p>
+              )}
+              {budgetData?.items.some(item => item.abyip_ppa_activity) && (
+                <p className="text-sm text-muted-foreground mt-1">✓ ABYIP-aligned PPA/Activity included</p>
+              )}
             </div>
-            <p className="text-gray-600">Redirecting to dashboard...</p>
+            <p className="text-muted-foreground">Redirecting to dashboard...</p>
           </div>
         )}
       </div>

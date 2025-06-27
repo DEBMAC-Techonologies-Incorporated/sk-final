@@ -2,6 +2,9 @@ export interface BudgetItem {
   category: string;
   amount: number;
   description?: string;
+  committee_responsible?: string;
+  committee_oversight?: string;
+  abyip_ppa_activity?: string;
 }
 
 export interface BudgetData {
@@ -131,20 +134,124 @@ export class BudgetManager {
     };
   }
 
-  validateBudgetAllocation(amount: number, category: string): { valid: boolean; message?: string } {
+  validateBudgetAllocation(amount: number, category: string, projectId?: string): { valid: boolean; message?: string } {
     if (amount <= 0) {
       return { valid: false, message: 'Amount must be greater than 0' };
     }
 
     const available = this.getCategoryAvailableBudget(category);
-    if (amount > available) {
+    
+    // If this is an update for an existing project, add back the current allocation
+    let adjustedAvailable = available;
+    if (projectId) {
+      const existingBudget = this.getProjectBudget(projectId);
+      if (existingBudget && existingBudget.category === category) {
+        adjustedAvailable += existingBudget.allocatedAmount;
+      }
+    }
+
+    if (amount > adjustedAvailable) {
       return { 
         valid: false, 
-        message: `Insufficient budget in ${category}. Available: $${available.toLocaleString()}` 
+        message: `Insufficient budget in ${category}. Available: $${adjustedAvailable.toLocaleString()}, Requested: $${amount.toLocaleString()}` 
+      };
+    }
+
+    // Check if this would exceed total budget
+    const totalAvailable = this.getAvailableBudget();
+    if (projectId) {
+      const existingBudget = this.getProjectBudget(projectId);
+      if (existingBudget) {
+        adjustedAvailable = totalAvailable + existingBudget.allocatedAmount;
+      }
+    }
+    
+    if (amount > adjustedAvailable) {
+      return { 
+        valid: false, 
+        message: `This allocation would exceed total available budget. Available: $${adjustedAvailable.toLocaleString()}, Requested: $${amount.toLocaleString()}` 
       };
     }
 
     return { valid: true };
+  }
+
+  // New method to get budget status for display
+  getBudgetStatus() {
+    const summary = this.getBudgetSummary();
+    const status = {
+      ...summary,
+      status: 'healthy' as 'healthy' | 'warning' | 'critical',
+      statusMessage: ''
+    };
+
+    if (summary.percentageUsed >= 90) {
+      status.status = 'critical';
+      status.statusMessage = 'Budget nearly exhausted';
+    } else if (summary.percentageUsed >= 75) {
+      status.status = 'warning';
+      status.statusMessage = 'Budget usage is high';
+    } else {
+      status.status = 'healthy';
+      status.statusMessage = 'Budget usage is normal';
+    }
+
+    return status;
+  }
+
+  // New method to get category status
+  getCategoryStatus(category: string) {
+    const available = this.getCategoryAvailableBudget(category);
+    const total = this.budgetData?.items.find(item => item.category === category)?.amount || 0;
+    const used = total - available;
+    const percentage = total > 0 ? (used / total) * 100 : 0;
+
+    const status = {
+      category,
+      total,
+      used,
+      available,
+      percentage,
+      status: 'healthy' as 'healthy' | 'warning' | 'critical',
+      statusMessage: ''
+    };
+
+    if (percentage >= 90) {
+      status.status = 'critical';
+      status.statusMessage = 'Category nearly exhausted';
+    } else if (percentage >= 75) {
+      status.status = 'warning';
+      status.statusMessage = 'Category usage is high';
+    } else {
+      status.status = 'healthy';
+      status.statusMessage = 'Category usage is normal';
+    }
+
+    return status;
+  }
+
+  // New method to get all project budgets
+  getAllProjectBudgets(): ProjectBudget[] {
+    return [...this.projectBudgets];
+  }
+
+  // New method to get total allocated budget
+  getTotalAllocatedBudget(): number {
+    return this.projectBudgets.reduce((sum, budget) => sum + budget.allocatedAmount, 0);
+  }
+
+  // New method to check if budget is over-allocated
+  isBudgetOverAllocated(): boolean {
+    const total = this.getTotalBudget();
+    const allocated = this.getTotalAllocatedBudget();
+    return allocated > total;
+  }
+
+  // New method to get over-allocation amount
+  getOverAllocationAmount(): number {
+    const total = this.getTotalBudget();
+    const allocated = this.getTotalAllocatedBudget();
+    return Math.max(0, allocated - total);
   }
 }
 

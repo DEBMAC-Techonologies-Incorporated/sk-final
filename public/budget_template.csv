@@ -1,7 +1,9 @@
-category,amount,description
-Development,50000,Software development costs including coding, testing, and deployment
-Design,15000,UI/UX design work, wireframes, and visual assets
-Marketing,10000,Promotional activities, advertising, and brand awareness
-Infrastructure,25000,Server hosting, cloud services, and technical infrastructure
-Legal,5000,Legal consultation, contracts, and compliance
-Training,5000,Team training and skill development programs 
+category,amount,description,committee_responsible,committee_oversight,abyip_ppa_activity
+PPA 1.1 - Infrastructure Development,50000,Community infrastructure projects and facilities improvement,Infrastructure Committee,Executive Committee,ABYIP 1.1 - Community Center Construction
+PPA 1.2 - Capacity Building,15000,Training programs and skill development initiatives,Education Committee,Executive Committee,ABYIP 1.2 - Youth Leadership Training
+PPA 2.1 - Community Outreach,10000,Community engagement and awareness programs,Community Affairs Committee,Executive Committee,ABYIP 2.1 - Health Awareness Campaign
+PPA 2.2 - Educational Programs,25000,Educational initiatives and scholarship programs,Education Committee,Executive Committee,ABYIP 2.2 - Scholarship Program
+PPA 3.1 - Healthcare Initiatives,20000,Health and wellness programs for the community,Health Committee,Executive Committee,ABYIP 3.1 - Medical Mission
+PPA 3.2 - Youth Development,15000,Youth empowerment and leadership programs,Youth Affairs Committee,Executive Committee,ABYIP 3.2 - Sports Tournament
+PPA 4.1 - Environmental Protection,10000,Environmental awareness and conservation projects,Environment Committee,Executive Committee,ABYIP 4.1 - Tree Planting Project
+PPA 4.2 - Sports and Recreation,8000,Sports activities and recreational programs,Sports Committee,Executive Committee,ABYIP 4.2 - Community Sports Day 

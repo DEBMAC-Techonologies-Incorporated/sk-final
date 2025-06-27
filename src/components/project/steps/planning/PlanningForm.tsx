@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { CheckCircle2, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, Plus, Trash2, DollarSign, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { budgetManager, BudgetData } from '@/lib/budget';
 
 interface PurchaseItem {
     id: string;
@@ -49,16 +50,15 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
     const [authorizer, setAuthorizer] = useState('');
     const [budgetAvailabilityConfirmed, setBudgetAvailabilityConfirmed] = useState(false);
 
-    // Sample options
-    const abyipOptions = [
-        'PPA 1.1 - Infrastructure Development',
-        'PPA 1.2 - Capacity Building',
-        'PPA 2.1 - Community Outreach',
-        'PPA 2.2 - Educational Programs',
-        'PPA 3.1 - Healthcare Initiatives',
-        'PPA 3.2 - Youth Development'
-    ];
+    // Budget validation
+    const [budgetValidation, setBudgetValidation] = useState<{ valid: boolean; message?: string } | null>(null);
+    const [budgetStatus, setBudgetStatus] = useState<any>(null);
+    const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
 
+    // Get ABYIP options from actual budget data
+    const abyipOptions = budgetData ? Array.from(new Set(budgetData.items.map(i => i.abyip_ppa_activity).filter(Boolean))) : [];
+
+    // Sample options for other fields
     const existingPRs = [
         'PR-2025-001 - Community Center Equipment',
         'PR-2025-002 - Youth Program Supplies',
@@ -119,6 +119,59 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
         calculateTotalAmount();
     }, [purchaseItems]);
 
+    // Load budget data
+    useEffect(() => {
+        const data = budgetManager.loadBudgetData();
+        if (data) {
+            setBudgetData(data);
+        }
+    }, []);
+
+    // Get available budget for selected ABYIP activity
+    const getSelectedActivityBudget = () => {
+        if (!selectedPPA || !budgetData) return null;
+        
+        const item = budgetData.items.find(i => i.abyip_ppa_activity === selectedPPA);
+        if (item) {
+            return budgetManager.getCategoryAvailableBudget(item.category);
+        }
+        return null;
+    };
+
+    const selectedActivityBudget = getSelectedActivityBudget();
+
+    // Budget validation effect
+    useEffect(() => {
+        const status = budgetManager.getBudgetStatus();
+        setBudgetStatus(status);
+        
+        if (totalPRAmount && parseFloat(totalPRAmount) > 0) {
+            const amount = parseFloat(totalPRAmount);
+            let isValid = true;
+            let message = '';
+
+            // Check if total amount exceeds available budget
+            if (amount > status.available) {
+                isValid = false;
+                message = `Purchase amount ($${amount.toLocaleString()}) exceeds total available budget ($${status.available.toLocaleString()})`;
+            }
+
+            // Check if amount exceeds selected activity's budget
+            if (selectedPPA && selectedActivityBudget !== null && amount > selectedActivityBudget) {
+                isValid = false;
+                message = `Purchase amount ($${amount.toLocaleString()}) exceeds selected activity's available budget ($${selectedActivityBudget.toLocaleString()})`;
+            }
+
+            if (isValid) {
+                setBudgetValidation({ valid: true });
+            } else {
+                setBudgetValidation({ valid: false, message });
+            }
+        } else {
+            setBudgetValidation(null);
+        }
+    }, [totalPRAmount, selectedPPA, selectedActivityBudget]);
+
     const handleGenerate = () => {
         // Validate required fields
         if (!selectedPPA || !activityName || !activityDescription || !targetBeneficiaries ||
@@ -129,6 +182,12 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
 
         if (!purchaseItems.some(item => item.description.trim())) {
             alert('Please add at least one purchase item.');
+            return;
+        }
+
+        // Budget validation
+        if (budgetValidation && !budgetValidation.valid) {
+            alert(`Budget validation failed: ${budgetValidation.message}`);
             return;
         }
 
@@ -167,18 +226,29 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
                     <label htmlFor="ppa" className="block text-sm font-medium text-foreground mb-2">
                         Select ABYIP-aligned PPA/Activity <span className="text-red-500">*</span>
                     </label>
-                    <select
-                        id="ppa"
-                        value={selectedPPA}
-                        onChange={(e) => setSelectedPPA(e.target.value)}
-                        className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
-                        required
-                    >
-                        <option value="">Select an option...</option>
-                        {abyipOptions.map((option, index) => (
-                            <option key={index} value={option}>{option}</option>
-                        ))}
-                    </select>
+                    {budgetData ? (
+                        <select
+                            id="ppa"
+                            value={selectedPPA}
+                            onChange={(e) => setSelectedPPA(e.target.value)}
+                            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background"
+                            required
+                        >
+                            <option value="">Select an ABYIP activity...</option>
+                            {abyipOptions.map((option, index) => (
+                                <option key={index} value={option}>{option}</option>
+                            ))}
+                        </select>
+                    ) : (
+                        <div className="w-full px-3 py-2 border border-input rounded-md bg-muted text-muted-foreground">
+                            Loading ABYIP activities from budget data...
+                        </div>
+                    )}
+                    {!budgetData && (
+                        <p className="text-xs text-red-600 mt-1">
+                            No budget data available. Please complete onboarding first.
+                        </p>
+                    )}
                 </div>
 
                 {/* Activity Name and Description */}
@@ -314,6 +384,103 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
                         ))}
                     </div>
                 </div>
+
+                {/* Budget Display and Validation */}
+                {budgetStatus && (
+                    <div className={`rounded-lg p-4 border ${
+                        budgetStatus.status === 'critical' ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' :
+                        budgetStatus.status === 'warning' ? 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800' :
+                        'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                    }`}>
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center space-x-2">
+                                <DollarSign className="w-5 h-5 text-muted-foreground" />
+                                <h4 className="font-medium text-foreground">Budget Status</h4>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span className={`text-sm font-medium ${
+                                    budgetStatus.status === 'critical' ? 'text-red-600' :
+                                    budgetStatus.status === 'warning' ? 'text-yellow-600' : 'text-green-600'
+                                }`}>
+                                    {budgetStatus.statusMessage}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-3 gap-4 text-sm mb-3">
+                            <div>
+                                <p className="text-muted-foreground">Total Available</p>
+                                <p className={`font-medium ${budgetStatus.available < 1000 ? 'text-red-600' : 'text-foreground'}`}>
+                                    ${budgetStatus.available.toLocaleString()}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">Purchase Amount</p>
+                                <p className="font-medium text-blue-600">
+                                    ${totalPRAmount ? parseFloat(totalPRAmount).toLocaleString() : '0'}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-muted-foreground">Remaining</p>
+                                <p className={`font-medium ${
+                                    totalPRAmount && parseFloat(totalPRAmount) > budgetStatus.available ? 'text-red-600' : 'text-foreground'
+                                }`}>
+                                    ${totalPRAmount ? (budgetStatus.available - parseFloat(totalPRAmount)).toLocaleString() : budgetStatus.available.toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Selected Activity Budget */}
+                        {selectedPPA && selectedActivityBudget !== null && (
+                            <div className="bg-muted rounded-lg p-3 mb-3">
+                                <h5 className="font-medium text-foreground mb-2">Selected Activity Budget</h5>
+                                <div className="flex items-center justify-between text-sm">
+                                    <div>
+                                        <p className="text-muted-foreground">Activity</p>
+                                        <p className="font-medium text-foreground">{selectedPPA}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-muted-foreground">Available Budget</p>
+                                        <p className={`font-medium ${selectedActivityBudget < 1000 ? 'text-red-600' : 'text-foreground'}`}>
+                                            ${selectedActivityBudget.toLocaleString()}
+                                        </p>
+                                    </div>
+                                </div>
+                                {totalPRAmount && parseFloat(totalPRAmount) > selectedActivityBudget && (
+                                    <p className="text-xs text-red-600 mt-2">
+                                        ⚠️ Purchase amount exceeds this activity's available budget
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
+                        {budgetValidation && (
+                            <div className={`rounded-lg p-3 flex items-start space-x-3 ${
+                                budgetValidation.valid 
+                                    ? 'bg-green-50 border border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                                    : 'bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800'
+                            }`}>
+                                {budgetValidation.valid ? (
+                                    <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0 dark:text-green-400" />
+                                ) : (
+                                    <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0 dark:text-red-400" />
+                                )}
+                                <div>
+                                    <p className={`font-medium ${
+                                        budgetValidation.valid ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'
+                                    }`}>
+                                        {budgetValidation.valid ? 'Budget Valid' : 'Budget Error'}
+                                    </p>
+                                    <p className={`text-sm ${
+                                        budgetValidation.valid ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'
+                                    }`}>
+                                        {budgetValidation.message}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Total Amount */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

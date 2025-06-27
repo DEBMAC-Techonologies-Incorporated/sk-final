@@ -16,6 +16,8 @@ import DVForm, { DVFormData } from '@/components/project/steps/dv/DVForm';
 import ApprovalForm, { ApprovalFormData } from '@/components/project/steps/approval/ApprovalForm';
 import ResolutionForm, { ResolutionFormData } from '@/components/project/steps/resolution/ResolutionForm';
 import WithdrawalForm, { WithdrawalFormData } from '@/components/project/steps/withdrawal/WithdrawalForm';
+import BudgetDisplay from '@/components/budget/BudgetDisplay';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 interface ProjectPageProps {
     params: Promise<{ id: string }>;
@@ -188,11 +190,16 @@ export default function ProjectPage({ params }: ProjectPageProps) {
                             <div className="text-sm text-muted-foreground">
                                 Progress: <span className="font-medium">{progress}%</span>
                             </div>
+                            <ThemeToggle />
                             <Button variant="outline" onClick={exportMarkdown}>
                                 <Download className="h-4 w-4 mr-2" />
                                 Export
                             </Button>
                         </div>
+                    </div>
+                    {/* Budget Display */}
+                    <div className="pb-4">
+                        <BudgetDisplay projectId={project.id} compact={true} /> 
                     </div>
                 </div>
             </header>
