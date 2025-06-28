@@ -89,6 +89,7 @@ export class ExportUtils {
 
             // Create a clean HTML version for PDF
             const cleanHtml = this.prepareHtmlForPdf(element.innerHTML);
+            console.log('Prepared HTML for PDF:', cleanHtml);
             
             // Use jsPDF's html method to convert HTML to PDF
             await pdf.html(cleanHtml, {
@@ -144,16 +145,113 @@ export class ExportUtils {
      * Prepare HTML content for PDF conversion
      */
     private static prepareHtmlForPdf(html: string): string {
+        // Clean up problematic attributes and classes
+        let cleanHtml = html
+            // Remove contenteditable attributes
+            .replace(/contenteditable="[^"]*"/gi, '')
+            // Remove translate attributes
+            .replace(/translate="[^"]*"/gi, '')
+            // Remove tabindex attributes
+            .replace(/tabindex="[^"]*"/gi, '')
+            // Remove TipTap/ProseMirror classes
+            .replace(/class="[^"]*tiptap[^"]*"/gi, '')
+            .replace(/class="[^"]*ProseMirror[^"]*"/gi, '')
+            .replace(/class="[^"]*prose[^"]*"/gi, '')
+            // Remove all class attributes (since they're causing issues)
+            .replace(/class="[^"]*"/gi, '')
+            // Remove empty p tags with just br
+            .replace(/<p><br[^>]*><\/p>/gi, '')
+            .replace(/<p><br[^>]*class="[^"]*"><\/p>/gi, '')
+            // Clean up trailing breaks
+            .replace(/class="ProseMirror-trailingBreak"/gi, '')
+            // Remove any remaining empty divs
+            .replace(/<div[^>]*><\/div>/gi, '')
+            // Fix checkbox symbols - replace HTML entities with proper symbols
+            .replace(/☑/g, '[X]') // Checked checkbox
+            .replace(/☐/g, '[ ]') // Unchecked checkbox
+            // Alternative checkbox patterns
+            .replace(/&amp;#9745;/g, '[X]') // HTML entity for checked
+            .replace(/&amp;#9744;/g, '[ ]') // HTML entity for unchecked
+            .replace(/&#9745;/g, '[X]') // Direct HTML entity for checked
+            .replace(/&#9744;/g, '[ ]'); // Direct HTML entity for unchecked
+
         return `
             <div style="
                 font-family: 'Times New Roman', serif;
                 font-size: 12pt;
-                line-height: 1.4;
+                line-height: 1.6;
                 color: #000;
                 max-width: 100%;
                 word-wrap: break-word;
+                padding: 20px;
             ">
-                ${html}
+                <style>
+                    h1 { 
+                        font-size: 18pt; 
+                        font-weight: bold; 
+                        margin: 16pt 0 12pt 0; 
+                        padding: 0;
+                        line-height: 1.3;
+                        page-break-after: avoid;
+                    }
+                    h2 { 
+                        font-size: 14pt; 
+                        font-weight: bold; 
+                        margin: 14pt 0 8pt 0; 
+                        line-height: 1.3;
+                        page-break-after: avoid;
+                    }
+                    h3 { 
+                        font-size: 12pt; 
+                        font-weight: bold; 
+                        margin: 12pt 0 6pt 0; 
+                        line-height: 1.3;
+                    }
+                    p { 
+                        margin: 6pt 0; 
+                        line-height: 1.4;
+                        vertical-align: baseline;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 12pt 0;
+                        font-size: 10pt;
+                    }
+                    th, td {
+                        border: 1pt solid #000;
+                        padding: 6pt;
+                        text-align: left;
+                        vertical-align: top;
+                    }
+                    th {
+                        font-weight: bold;
+                        background-color: #f0f0f0;
+                    }
+                    strong {
+                        font-weight: bold;
+                        vertical-align: baseline;
+                        display: inline;
+                    }
+                    .tableWrapper {
+                        margin: 12pt 0;
+                        overflow: visible;
+                    }
+                    div {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    /* Fix alignment issues */
+                    * {
+                        vertical-align: baseline;
+                    }
+                    /* Ensure consistent baseline alignment */
+                    strong, b {
+                        vertical-align: baseline;
+                        line-height: inherit;
+                    }
+                </style>
+                ${cleanHtml}
             </div>
         `;
     }
