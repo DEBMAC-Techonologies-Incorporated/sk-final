@@ -93,32 +93,33 @@ export class ExportUtils {
             const shouldAddLetterhead = currentStep && needsLetterhead(currentStep);
             const letterheadConfig = shouldAddLetterhead ? getLetterheadConfig() : null;
 
-            let startY = 15; // Default start position
+            let startY = 20; // Default start position with proper margin
 
             // Add letterhead as proper PDF header if needed
             if (shouldAddLetterhead && letterheadConfig) {
                 // Create letterhead HTML
                 const letterheadHtml = generateLetterheadHtml(letterheadConfig);
                 
-                // Add letterhead at the very top of the page
+                // Add letterhead with proper margins and positioning
                 await pdf.html(letterheadHtml, {
                     callback: function() {
                         // Letterhead added successfully
                     },
-                    x: 15,
-                    y: 10, // Very top of the page
-                    width: 180,
-                    windowWidth: 650,
+                    x: 20, // Proper left margin to match standard documents
+                    y: 15, // Top margin
+                    width: 170, // Safe width that won't overflow (210mm - 20mm left - 20mm right = 170mm)
+                    windowWidth: 650, // Optimized for content rendering
                     autoPaging: false, // Don't let letterhead create new pages
                     html2canvas: {
                         allowTaint: true,
                         useCORS: true,
-                        scale: 0.3
+                        scale: 0.4, // Higher quality scale
+                        backgroundColor: '#ffffff'
                     }
                 });
 
                 // Adjust start position for main content to be below letterhead
-                startY = 50; // Give space for letterhead
+                startY = 55; // Space for letterhead + margin
             }
 
             // Get clean content and extract letterhead for PDF header
@@ -139,21 +140,22 @@ export class ExportUtils {
             // Create a clean HTML version for PDF
             const cleanHtml = this.prepareHtmlForPdf(cleanContent);
             
-            // Add main content below the letterhead
+            // Add main content below the letterhead with matching margins
             await pdf.html(cleanHtml, {
                 callback: function (pdf) {
                     pdf.save(`${filename}.pdf`);
                 },
-                x: 15,
+                x: 20, // Match letterhead left margin exactly
                 y: startY, // Start below letterhead
-                width: 180,
-                windowWidth: 650,
-                margin: [10, 10, 10, 10],
+                width: 170, // Match letterhead width exactly to prevent overflow
+                windowWidth: 650, // Match letterhead windowWidth
+                margin: [20, 20, 20, 20], // Consistent margins all around
                 autoPaging: 'text',
                 html2canvas: {
                     allowTaint: true,
                     useCORS: true,
-                    scale: 0.25
+                    scale: 0.4, // Match letterhead scale for consistency
+                    backgroundColor: '#ffffff'
                 }
             });
 
@@ -383,8 +385,9 @@ export class ExportUtils {
                     <title>${filename}</title>
                     <style>
                         @page {
-                            margin: 1in;
+                            margin: 0.5in 0.75in;
                             size: A4;
+                            /* Note: To remove date/filename headers, disable headers/footers in print settings */
                         }
                         body {
                             font-family: 'Times New Roman', Times, serif;
@@ -397,19 +400,23 @@ export class ExportUtils {
                         }
                         .letterhead {
                             page-break-inside: avoid;
-                            margin-bottom: 20px;
+                            margin-bottom: 15px;
                         }
                         .letterhead table {
                             width: 100%;
                             border-collapse: collapse;
+                            border: none !important;
+                        }
+                        .letterhead td {
+                            border: none !important;
                         }
                         .letterhead img {
-                            max-width: 80px;
-                            max-height: 80px;
+                            max-width: 45px;
+                            max-height: 45px;
                             object-fit: contain;
                         }
                         .content {
-                            margin-top: 20px;
+                            margin-top: 10px;
                         }
                         h1, h2, h3, h4, h5, h6 {
                             font-family: 'Times New Roman', Times, serif;
@@ -434,8 +441,22 @@ export class ExportUtils {
                             font-weight: bold;
                         }
                         @media print {
-                            body { -webkit-print-color-adjust: exact; }
-                            .letterhead { page-break-inside: avoid; }
+                            @page {
+                                margin: 0.5in 0.75in;
+                                size: A4;
+                            }
+                            body { 
+                                -webkit-print-color-adjust: exact; 
+                                font-family: 'Times New Roman', Times, serif;
+                            }
+                            .letterhead { 
+                                page-break-inside: avoid; 
+                                margin-bottom: 15px;
+                            }
+                            .letterhead table,
+                            .letterhead td {
+                                border: none !important;
+                            }
                         }
                     </style>
                 </head>
@@ -455,6 +476,15 @@ export class ExportUtils {
                     printWindow.close();
                 }, 500);
             };
+
+            // Try to hide browser print headers/footers by setting print settings
+            try {
+                if (printWindow.document) {
+                    printWindow.document.title = ''; // Remove title from header
+                }
+            } catch (e) {
+                // Ignore if cross-origin or other issues
+            }
         } catch (error) {
             console.error('Error exporting to PDF:', error);
             alert('Failed to export PDF. Please try again.');
@@ -483,11 +513,13 @@ export class ExportUtils {
                         }
                         .letterhead table {
                             width: 100%;
+                            max-width: 8.5in;
+                            margin: 0 auto;
                             border-collapse: collapse;
                         }
                         .letterhead img {
-                            max-width: 80px;
-                            max-height: 80px;
+                            max-width: 70px;
+                            max-height: 70px;
                             object-fit: contain;
                         }
                         h1, h2, h3, h4, h5, h6 {

@@ -24,36 +24,42 @@ export const DEFAULT_LETTERHEAD_CONFIG: LetterheadConfig = {
 
 export const generateLetterheadHtml = (config: LetterheadConfig): string => {
   const cityLogo = config.cityLogoUrl 
-    ? `<img src="${config.cityLogoUrl}" alt="City Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; border: none; outline: none;" />`
-    : `<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #ccc; text-align: center; background-color: transparent; border: none;">[City Logo]</div>`;
+    ? `<img src="${config.cityLogoUrl}" alt="City Logo" width="65" height="65" style="object-fit: contain;" />`
+    : `<div style="width: 65px; height: 65px; font-size: 9px; color: #999; text-align: center; border: 1px dashed #ccc; line-height: 65px;">[City Logo]</div>`;
     
   const skLogo = config.skLogoUrl 
-    ? `<img src="${config.skLogoUrl}" alt="SK Logo" style="width: 80px; height: 80px; object-fit: contain; display: block; border: none; outline: none;" />`
-    : `<div style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #ccc; text-align: center; background-color: transparent; border: none;">[SK Logo]</div>`;
+    ? `<img src="${config.skLogoUrl}" alt="SK Logo" width="65" height="65" style="object-fit: contain;" />`
+    : `<div style="width: 65px; height: 65px; font-size: 9px; color: #999; text-align: center; border: 1px dashed #ccc; line-height: 65px;">[SK Logo]</div>`;
 
   return `
-    <div style="width: 100%; margin-bottom: 24px; page-break-inside: avoid; border: none; outline: none; background: transparent;">
-      <table style="width: 100%; border-collapse: collapse; margin: 0 auto; max-width: 100%; border: none; outline: none;" cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td style="width: 100px; text-align: center; vertical-align: middle; padding: 8px; border: none; outline: none;">
-            ${cityLogo}
-          </td>
-          <td style="text-align: center; vertical-align: middle; padding: 8px 16px; width: auto; border: none; outline: none;">
-            <div style="font-family: 'Times New Roman', Times, serif; color: #000; line-height: 1.3; border: none; outline: none;">
-              <div style="font-size: 14px; font-weight: normal; margin-bottom: 2px; border: none;">Republic of the Philippines</div>
-              <div style="font-size: 16px; font-weight: bold; margin-bottom: 2px; border: none;">${config.provinceOrCity.toUpperCase()} OF ${config.provinceCityName.toUpperCase()}</div>
-              <div style="font-size: 15px; font-weight: normal; margin-bottom: 2px; border: none;">${config.municipalityOrCity === 'city' ? 'City' : 'Municipality'} of ${config.municipalityCityName}</div>
-              <div style="font-size: 14px; font-weight: normal; margin-bottom: 2px; border: none;">Barangay ${config.barangayName}</div>
-              <div style="font-size: 15px; font-weight: bold; margin-top: 4px; border: none;">OFFICE OF THE SANGGUNIANG KABATAAN</div>
-            </div>
-          </td>
-          <td style="width: 100px; text-align: center; vertical-align: middle; padding: 8px; border: none; outline: none;">
-            ${skLogo}
-          </td>
-        </tr>
-      </table>
-      <div style="border-top: 3px solid #000; width: 100%; margin-top: 16px; border-left: none; border-right: none; border-bottom: none;"></div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 8px; font-family: 'Times New Roman', serif; border: none; border-collapse: collapse;">
+      <tr>
+        <td width="10%" align="center" valign="middle" style="border: none; padding: 4px;">
+          <!-- Left Margin 10% -->
+        </td>
+        <td width="18%" align="center" valign="middle" style="border: none; padding: 4px; text-align: center;">
+          ${cityLogo}
+        </td>
+        <td width="44%" align="center" valign="middle" style="font-family: 'Times New Roman', serif; color: #000; padding: 4px 8px; border: none; line-height: 1.1;">
+          <div style="font-size: 11px; margin: 0; line-height: 1.1; text-align: center;">Republic of the Philippines</div>
+          <div style="font-size: 13px; font-weight: bold; margin: 0; line-height: 1.1; text-align: center;">${config.provinceOrCity.toUpperCase()} OF ${config.provinceCityName.toUpperCase()}</div>
+          <div style="font-size: 12px; margin: 0; line-height: 1.1; text-align: center;">${config.municipalityOrCity === 'city' ? 'City' : 'Municipality'} of ${config.municipalityCityName}</div>
+          <div style="font-size: 11px; margin: 0; line-height: 1.1; text-align: center;">Barangay ${config.barangayName}</div>
+          <div style="font-size: 12px; font-weight: bold; margin: 0; line-height: 1.1; text-align: center; white-space: nowrap;">OFFICE OF THE SANGGUNIANG KABATAAN</div>
+        </td>
+        <td width="18%" align="center" valign="middle" style="border: none; padding: 4px; text-align: center;">
+          ${skLogo}
+        </td>
+        <td width="10%" align="center" valign="middle" style="border: none; padding: 4px;">
+          <!-- Right Margin 10% -->
+        </td>
+      </tr>
+      <tr>
+        <td colspan="5" style="padding: 4px 0 0 0; border: none;">
+          <hr style="border: none; border-top: 1px solid #000; margin: 0; height: 1px;" />
+        </td>
+      </tr>
+    </table>
   `;
 };
 

@@ -107,7 +107,12 @@ export default function DocumentEditorHeader({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => ExportUtils.exportPdf(editorContentId, exportFileName, currentStep)}
+                        onClick={() => {
+                            const element = document.getElementById(editorContentId);
+                            if (element) {
+                                ExportUtils.exportToPDF(element.innerHTML, exportFileName, currentStep);
+                            }
+                        }}
                     >
                         <FileDown className="h-4 w-4 mr-2" />
                         PDF
