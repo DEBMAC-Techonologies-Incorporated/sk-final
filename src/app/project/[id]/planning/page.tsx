@@ -127,18 +127,68 @@ export default function PlanningPage({ params }: PlanningPageProps) {
             const data = await response.json();
 
             if (data.success) {
+                // Clean the AI-generated content first (remove markdown code blocks)
+                let cleanContent = data.content;
+                
+                // Remove ```html at the beginning
+                if (cleanContent.startsWith('```html')) {
+                    cleanContent = cleanContent.substring(7);
+                } else if (cleanContent.startsWith('```')) {
+                    cleanContent = cleanContent.substring(3);
+                }
+                
+                // Remove trailing ``` at the end
+                if (cleanContent.endsWith('```')) {
+                    cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+                }
+                
+                // Trim any extra whitespace
+                cleanContent = cleanContent.trim();
+
+                // Parse the cleaned content to split into two documents
+                const fullContent = cleanContent;
+                const splitKeyword = "PURCHASE REQUEST AUTHORIZATION FORM";
+                const splitIndex = fullContent.indexOf(splitKeyword);
+
+                let purchaseRequestContent = fullContent;
+                let purchaseAuthorizationContent = `<h2>Purchase Request Authorization Form</h2><p>This authorization form is generated based on the purchase request.</p><p><strong>Related to:</strong> ${formData.activityName || 'Planning Request'}</p><p><em>This document will be expanded with more content in future updates.</em></p>`;
+
+                // If the split keyword is found, divide the content
+                if (splitIndex !== -1) {
+                    purchaseRequestContent = fullContent.substring(0, splitIndex).trim();
+                    
+                    // Look for the opening tag that contains the keyword to preserve styling
+                    const beforeKeyword = fullContent.substring(0, splitIndex);
+                    const lastOpenTag = beforeKeyword.lastIndexOf('<');
+                    const nextCloseTag = fullContent.indexOf('>', splitIndex);
+                    
+                    // If we find tags around the keyword, include the opening tag with the authorization content
+                    if (lastOpenTag !== -1 && nextCloseTag !== -1) {
+                        const tagStart = fullContent.substring(lastOpenTag, splitIndex);
+                        // Check if this looks like an opening tag (not a closing tag)
+                        if (!tagStart.includes('</')) {
+                            purchaseRequestContent = fullContent.substring(0, lastOpenTag).trim();
+                            purchaseAuthorizationContent = fullContent.substring(lastOpenTag).trim();
+                        } else {
+                            purchaseAuthorizationContent = fullContent.substring(splitIndex).trim();
+                        }
+                    } else {
+                        purchaseAuthorizationContent = fullContent.substring(splitIndex).trim();
+                    }
+                }
+
                 // Create multiple documents structure
                 const generatedDocs: StepDocument[] = [
                     {
                         id: 'purchase-request',
                         title: 'Purchase Request Form',
-                        content: data.content,
+                        content: purchaseRequestContent,
                         type: 'form'
                     },
                     {
                         id: 'purchase-authorization',
                         title: 'Purchase Request Authorization Form',
-                        content: `<h2>Purchase Request Authorization Form</h2><p>This authorization form is generated based on the purchase request.</p><p><strong>Related to:</strong> ${formData.activityName || 'Planning Request'}</p><p><em>This document will be expanded with more content in future updates.</em></p>`,
+                        content: purchaseAuthorizationContent,
                         type: 'authorization'
                     }
                 ];
@@ -228,4 +278,4 @@ export default function PlanningPage({ params }: PlanningPageProps) {
             isGenerating={isGenerating}
         />
     );
-} 
+}
