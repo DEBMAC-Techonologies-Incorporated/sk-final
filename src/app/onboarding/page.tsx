@@ -57,16 +57,28 @@ export default function OnboardingPage() {
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    console.log('File being uploaded:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
 
     try {
       setProcessingStep('Analyzing PDF with AI...');
+      console.log('Sending fetch request to /api/parse-pdf');
       const response = await fetch('/api/parse-pdf', {
         method: 'POST',
         body: formData
       });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();

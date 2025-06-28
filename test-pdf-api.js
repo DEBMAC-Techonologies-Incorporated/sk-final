@@ -39,7 +39,8 @@ TOTAL BUDGET: ₱65,000.00`;
     // Make API request
     const response = await fetch('http://localhost:3000/api/parse-pdf', {
       method: 'POST',
-      body: formData
+      body: formData,
+      headers: formData.getHeaders()
     });
 
     if (response.ok) {

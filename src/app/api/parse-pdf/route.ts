@@ -21,8 +21,43 @@ const BudgetDataSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    console.log('API route called');
+    console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+    console.log('Request method:', request.method);
+    
+    // Check if the request has a body
+    if (!request.body) {
+      console.error('No request body found');
+      return NextResponse.json({ error: 'No request body' }, { status: 400 });
+    }
+    
+    let formData;
+    try {
+      formData = await request.formData();
+      console.log('FormData parsed successfully');
+    } catch (formDataError) {
+      console.error('Error parsing FormData:', formDataError);
+      
+      // Try to get the raw body for debugging
+      try {
+        const rawBody = await request.text();
+        console.log('Raw body (first 500 chars):', rawBody.substring(0, 500));
+      } catch (textError) {
+        console.error('Could not read raw body:', textError);
+      }
+      
+      return NextResponse.json({ 
+        error: 'Failed to parse body as FormData',
+        details: formDataError instanceof Error ? formDataError.message : 'Unknown error'
+      }, { status: 400 });
+    }
+    
     const file = formData.get('file') as File;
+    console.log('File extracted from FormData:', file ? {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    } : 'No file found');
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
@@ -143,7 +178,7 @@ You MUST return ONLY a valid JSON object with this exact structure:
       let currentSubcategory = '';
       let lastAmount = null;
       let lastCategory = '';
-      let lastDescription = '';
+      const lastDescription = '';
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         // Detect program/category headers
