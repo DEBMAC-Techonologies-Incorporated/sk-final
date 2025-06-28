@@ -16,6 +16,7 @@ interface DocumentEditorHeaderProps {
     projectTitle?: string;
     documentTitle?: string;
     editorContentId?: string;
+    currentStep?: string;
 }
 
 export default function DocumentEditorHeader({
@@ -29,7 +30,8 @@ export default function DocumentEditorHeader({
     isSaving,
     projectTitle,
     documentTitle,
-    editorContentId = 'editor-content-for-export'
+    editorContentId = 'editor-content-for-export',
+    currentStep
 }: DocumentEditorHeaderProps) {
     const characterCount = content.replace(/<[^>]*>/g, '').length;
     const exportFileName = projectTitle && documentTitle
@@ -89,7 +91,7 @@ export default function DocumentEditorHeader({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => ExportUtils.exportMarkdown(content, exportFileName)}
+                        onClick={() => ExportUtils.exportToMarkdown(content, exportFileName, currentStep)}
                     >
                         <Download className="h-4 w-4 mr-2" />
                         MD
@@ -97,7 +99,7 @@ export default function DocumentEditorHeader({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => ExportUtils.exportDocx(content, exportFileName)}
+                        onClick={() => ExportUtils.exportToWord(content, exportFileName, currentStep)}
                     >
                         <FileDown className="h-4 w-4 mr-2" />
                         DOCX
@@ -105,7 +107,12 @@ export default function DocumentEditorHeader({
                     <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => ExportUtils.exportPdf(editorContentId, exportFileName)}
+                        onClick={() => {
+                            const element = document.getElementById(editorContentId);
+                            if (element) {
+                                ExportUtils.exportToPDF(element.innerHTML, exportFileName, currentStep);
+                            }
+                        }}
                     >
                         <FileDown className="h-4 w-4 mr-2" />
                         PDF

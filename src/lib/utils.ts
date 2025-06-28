@@ -16,4 +16,23 @@ export function formatDate(date: Date): string {
 
 export function getProjectProgress(completedSteps: string[]): number {
     return Math.round((completedSteps.length / 5) * 100);
+}
+
+// Onboarding completion checks
+export function isBudgetSetupComplete(): boolean {
+    if (typeof window === 'undefined') return false;
+    const budgetData = localStorage.getItem('budgetData');
+    const onboardingComplete = localStorage.getItem('onboardingComplete');
+    return !!(budgetData && onboardingComplete);
+}
+
+export function isLetterheadSetupComplete(): boolean {
+    if (typeof window === 'undefined') return false;
+    const letterheadConfig = localStorage.getItem('letterheadConfig');
+    const letterheadComplete = localStorage.getItem('letterheadSetupComplete');
+    return !!(letterheadConfig && letterheadComplete);
+}
+
+export function isOnboardingComplete(): boolean {
+    return isBudgetSetupComplete() && isLetterheadSetupComplete();
 } 

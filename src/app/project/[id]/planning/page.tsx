@@ -244,6 +244,7 @@ export default function PlanningPage({ params }: PlanningPageProps) {
                     isSaving={isSaving}
                     projectTitle={project?.title}
                     documentTitle={selectedDocument.title}
+                    currentStep="planning"
                 />
                 <CardContent className="h-full p-0">
                     <div id="rich-editor-content" className="h-full">
@@ -251,6 +252,7 @@ export default function PlanningPage({ params }: PlanningPageProps) {
                             content={editingContent}
                             onChange={setEditingContent}
                             placeholder="Write your planning documentation here...\n\nUse the toolbar above to format your text with headings, bold, italic, lists, and more."
+                            currentStep="planning"
                         />
                     </div>
                 </CardContent>

@@ -188,6 +188,7 @@ export default function ApprovalPage({ params }: ApprovalPageProps) {
                     isSaving={isSaving}
                     projectTitle={project?.title}
                     documentTitle={selectedDocument.title}
+                    currentStep="approval"
                 />
                 <CardContent className="h-full p-0">
                     <div id="rich-editor-content" className="h-full">
@@ -195,6 +196,7 @@ export default function ApprovalPage({ params }: ApprovalPageProps) {
                             content={editingContent}
                             onChange={setEditingContent}
                             placeholder="Write your approval documentation here...\n\nUse the toolbar above to format your text with headings, bold, italic, lists, and more."
+                            currentStep="approval"
                         />
                     </div>
                 </CardContent>

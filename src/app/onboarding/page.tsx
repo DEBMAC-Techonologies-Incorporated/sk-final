@@ -121,9 +121,9 @@ export default function OnboardingPage() {
       setBudgetData(parsedData);
       setSuccess(true);
       
-      // Redirect to dashboard after 2 seconds
+      // Redirect to letterhead setup after 2 seconds
       setTimeout(() => {
-        router.push('/');
+        router.push('/letterhead-setup');
       }, 2000);
       
     } catch (error) {

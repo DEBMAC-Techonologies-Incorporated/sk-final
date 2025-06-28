@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
 import { Project } from '@/lib/types';
+import { isOnboardingComplete, isBudgetSetupComplete, isLetterheadSetupComplete } from '@/lib/utils';
 import { formatDate, getProjectProgress } from '@/lib/utils';
 import { budgetManager } from '@/lib/budget';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
@@ -43,14 +44,20 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    // Check onboarding status
-    const isOnboardingComplete = localStorage.getItem('onboardingComplete') === 'true';
-    setOnboardingComplete(isOnboardingComplete);
-
-    if (!isOnboardingComplete) {
-      router.push('/onboarding');
-      return;
+    // Check onboarding completion
+    if (!isOnboardingComplete()) {
+      if (!isBudgetSetupComplete()) {
+        router.push('/onboarding');
+        return;
+      }
+      if (!isLetterheadSetupComplete()) {
+        router.push('/letterhead-setup');
+        return;
+      }
     }
+
+    // Set onboarding complete if all checks pass
+    setOnboardingComplete(true);
 
     // Load budget data in proper order
     refreshBudgetSummary();

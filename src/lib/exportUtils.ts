@@ -1,6 +1,7 @@
 "use client";
 
 import jsPDF from 'jspdf';
+import { applyLetterheadToContent, needsLetterhead, getLetterheadConfig, generateLetterheadHtml } from './constants';
 
 export class ExportUtils {
     /**
@@ -72,8 +73,9 @@ export class ExportUtils {
 
     /**
      * Export HTML content directly to PDF using jsPDF's HTML functionality
+     * Now with enhanced letterhead support as proper PDF header
      */
-    static async exportPdf(elementId: string, filename: string) {
+    static async exportPdf(elementId: string, filename: string, currentStep?: string) {
         const element = document.getElementById(elementId);
         if (!element) {
             console.error(`Element with ID '${elementId}' not found for PDF export`);
@@ -87,27 +89,76 @@ export class ExportUtils {
                 format: 'a4'
             });
 
-            // Create a clean HTML version for PDF
-            const cleanHtml = this.prepareHtmlForPdf(element.innerHTML);
-            console.log('Prepared HTML for PDF:', cleanHtml);
+            // Check if this document needs a letterhead
+            const shouldAddLetterhead = currentStep && needsLetterhead(currentStep);
+            const letterheadConfig = shouldAddLetterhead ? getLetterheadConfig() : null;
+
+            let startY = 20; // Default start position with proper margin
+
+            // Add letterhead as proper PDF header if needed
+            if (shouldAddLetterhead && letterheadConfig) {
+                // Create letterhead HTML
+                const letterheadHtml = generateLetterheadHtml(letterheadConfig);
+                
+                // Add letterhead with proper margins and positioning
+                await pdf.html(letterheadHtml, {
+                    callback: function() {
+                        // Letterhead added successfully
+                    },
+                    x: 20, // Proper left margin to match standard documents
+                    y: 15, // Top margin
+                    width: 170, // Safe width that won't overflow (210mm - 20mm left - 20mm right = 170mm)
+                    windowWidth: 650, // Optimized for content rendering
+                    autoPaging: false, // Don't let letterhead create new pages
+                    html2canvas: {
+                        allowTaint: true,
+                        useCORS: true,
+                        scale: 0.4, // Higher quality scale
+                        backgroundColor: '#ffffff'
+                    }
+                });
+
+                // Adjust start position for main content to be below letterhead
+                startY = 55; // Space for letterhead + margin
+            }
+
+            // Get clean content and extract letterhead for PDF header
+            let cleanContent = element.innerHTML;
             
-            // Use jsPDF's html method to convert HTML to PDF
+            // Remove letterhead from body content since we're adding it as proper PDF header
+            // Look for letterhead patterns and remove them from body
+            cleanContent = cleanContent.replace(/<div[^>]*letterhead[^>]*>[\s\S]*?<\/div>/gi, '');
+            cleanContent = cleanContent.replace(/<table[^>]*>[\s\S]*?Republic of the Philippines[\s\S]*?SANGGUNIANG KABATAAN[\s\S]*?<\/table>/gi, '');
+            cleanContent = cleanContent.replace(/<div[^>]*>[\s\S]*?Republic of the Philippines[\s\S]*?SANGGUNIANG KABATAAN[\s\S]*?<\/div>/gi, '');
+            
+            // Clean up any empty elements or extra spacing that might result
+            cleanContent = cleanContent.replace(/<div[^>]*><\/div>/gi, '');
+            cleanContent = cleanContent.replace(/<p[^>]*><\/p>/gi, '');
+            cleanContent = cleanContent.replace(/^\s*<br[^>]*>\s*/gi, '');
+            cleanContent = cleanContent.trim();
+            
+            // Create a clean HTML version for PDF
+            const cleanHtml = this.prepareHtmlForPdf(cleanContent);
+            
+            // Add main content below the letterhead with matching margins
             await pdf.html(cleanHtml, {
                 callback: function (pdf) {
                     pdf.save(`${filename}.pdf`);
                 },
-                x: 15,
-                y: 15,
-                width: 180, // A4 width minus margins
-                windowWidth: 650,
-                margin: [10, 10, 10, 10],
+                x: 20, // Match letterhead left margin exactly
+                y: startY, // Start below letterhead
+                width: 170, // Match letterhead width exactly to prevent overflow
+                windowWidth: 650, // Match letterhead windowWidth
+                margin: [20, 20, 20, 20], // Consistent margins all around
                 autoPaging: 'text',
                 html2canvas: {
                     allowTaint: true,
                     useCORS: true,
-                    scale: 0.25
+                    scale: 0.4, // Match letterhead scale for consistency
+                    backgroundColor: '#ffffff'
                 }
             });
+
         } catch (error) {
             console.error('Error generating PDF:', error);
             // Fallback to a simpler text-based PDF
@@ -146,7 +197,7 @@ export class ExportUtils {
      */
     private static prepareHtmlForPdf(html: string): string {
         // Clean up problematic attributes and classes
-        let cleanHtml = html
+        const cleanHtml = html
             // Remove contenteditable attributes
             .replace(/contenteditable="[^"]*"/gi, '')
             // Remove translate attributes
@@ -198,6 +249,7 @@ export class ExportUtils {
                         font-size: 14pt; 
                         font-weight: bold; 
                         margin: 14pt 0 8pt 0; 
+                        padding: 0;
                         line-height: 1.3;
                         page-break-after: avoid;
                     }
@@ -205,50 +257,45 @@ export class ExportUtils {
                         font-size: 12pt; 
                         font-weight: bold; 
                         margin: 12pt 0 6pt 0; 
+                        padding: 0;
                         line-height: 1.3;
+                        page-break-after: avoid;
                     }
                     p { 
                         margin: 6pt 0; 
-                        line-height: 1.4;
-                        vertical-align: baseline;
-                    }
-                    table {
-                        border-collapse: collapse;
-                        width: 100%;
-                        margin: 12pt 0;
-                        font-size: 10pt;
-                    }
-                    th, td {
-                        border: 1pt solid #000;
-                        padding: 6pt;
-                        text-align: left;
-                        vertical-align: top;
-                    }
-                    th {
-                        font-weight: bold;
-                        background-color: #f0f0f0;
-                    }
-                    strong {
-                        font-weight: bold;
-                        vertical-align: baseline;
-                        display: inline;
-                    }
-                    .tableWrapper {
-                        margin: 12pt 0;
-                        overflow: visible;
-                    }
-                    div {
-                        margin: 0;
                         padding: 0;
+                        line-height: 1.6;
                     }
-                    /* Fix alignment issues */
-                    * {
-                        vertical-align: baseline;
+                    table { 
+                        border-collapse: collapse; 
+                        width: 100%; 
+                        margin: 12pt 0; 
+                        page-break-inside: auto;
                     }
-                    /* Ensure consistent baseline alignment */
-                    strong, b {
-                        vertical-align: baseline;
-                        line-height: inherit;
+                    th, td { 
+                        border: 1pt solid #000; 
+                        padding: 6pt; 
+                        text-align: left; 
+                        vertical-align: top;
+                        page-break-inside: avoid;
+                    }
+                    th { 
+                        background-color: #f0f0f0; 
+                        font-weight: bold; 
+                    }
+                    ul, ol { 
+                        margin: 6pt 0; 
+                        padding-left: 24pt; 
+                    }
+                    li { 
+                        margin: 3pt 0; 
+                        line-height: 1.4;
+                    }
+                    blockquote { 
+                        margin: 12pt 24pt; 
+                        padding: 6pt 12pt; 
+                        border-left: 3pt solid #ccc; 
+                        font-style: italic;
                     }
                 </style>
                 ${cleanHtml}
@@ -257,148 +304,316 @@ export class ExportUtils {
     }
 
     /**
-     * Create HTML content that Word can properly import
+     * Create Word-compatible HTML document
      */
     private static createWordCompatibleHtml(content: string, filename: string): string {
-        return `<!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office" 
-      xmlns:w="urn:schemas-microsoft-com:office:word" 
-      xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-    <meta charset="utf-8">
-    <meta name="ProgId" content="Word.Document">
-    <meta name="Generator" content="Microsoft Word 15">
-    <meta name="Originator" content="Microsoft Word 15">
-    <title>${filename}</title>
-    <!--[if gte mso 9]><xml>
-    <w:WordDocument>
-        <w:View>Print</w:View>
-        <w:Zoom>100</w:Zoom>
-        <w:DoNotPromptForConvert/>
-        <w:DoNotRelyOnCSS/>
-        <w:DoNotSaveAsSingleFile/>
-    </w:WordDocument>
-    </xml><![endif]-->
-    <style>
-        @page {
-            size: 8.5in 11in;
-            margin: 1in;
-        }
-        
-        body {
-            font-family: "Times New Roman", serif;
-            font-size: 12pt;
-            line-height: 1.15;
-            margin: 0;
-            padding: 0;
-        }
-        
-        h1 {
-            font-size: 16pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        h2 {
-            font-size: 14pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        h3 {
-            font-size: 13pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        h4 {
-            font-size: 12pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        h5 {
-            font-size: 11pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        h6 {
-            font-size: 10pt;
-            font-weight: bold;
-            margin: 12pt 0 6pt 0;
-            color: #000;
-        }
-        
-        p {
-            margin: 6pt 0;
-            text-align: left;
-        }
-        
-        ul, ol {
-            margin: 6pt 0;
-            padding-left: 36pt;
-        }
-        
-        li {
-            margin: 3pt 0;
-        }
-        
-        strong, b {
-            font-weight: bold;
-        }
-        
-        em, i {
-            font-style: italic;
-        }
-        
-        blockquote {
-            margin: 12pt 0;
-            padding: 6pt 12pt;
-            border-left: 3pt solid #ccc;
-            background-color: #f9f9f9;
-        }
-        
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 12pt 0;
-        }
-        
-        td, th {
-            border: 1pt solid #000;
-            padding: 6pt;
-            text-align: left;
-        }
-        
-        th {
-            font-weight: bold;
-            background-color: #f0f0f0;
-        }
-    </style>
-</head>
-<body>
-    ${content}
-</body>
-</html>`;
+        return `
+            <!DOCTYPE html>
+            <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                  xmlns:w='urn:schemas-microsoft-com:office:word' 
+                  xmlns='http://www.w3.org/TR/REC-html40'>
+            <head>
+                <meta charset="utf-8">
+                <title>${filename}</title>
+                <style>
+                    body {
+                        font-family: 'Times New Roman', Times, serif;
+                        font-size: 12pt;
+                        line-height: 1.6;
+                        margin: 1in;
+                        color: #000;
+                    }
+                    h1, h2, h3, h4, h5, h6 {
+                        font-family: 'Times New Roman', Times, serif;
+                        margin-top: 20px;
+                        margin-bottom: 10px;
+                    }
+                    table {
+                        border-collapse: collapse;
+                        width: 100%;
+                        margin: 10px 0;
+                    }
+                    th, td {
+                        border: 1px solid #000;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f5f5f5;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                ${content}
+            </body>
+            </html>
+        `;
     }
 
     /**
-     * Helper method to download a blob as a file
+     * Download a file blob
      */
     private static downloadFile(blob: Blob, filename: string) {
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
+    }
+
+    static async exportToPDF(content: string, filename: string, currentStep?: string): Promise<void> {
+        try {
+            // Apply letterhead if needed
+            const finalContent = currentStep ? applyLetterheadToContent(content, currentStep) : content;
+            
+            // Create a new window for printing
+            const printWindow = window.open('', '_blank');
+            if (!printWindow) {
+                throw new Error('Popup blocked. Please allow popups for this site.');
+            }
+
+            // HTML template for PDF export
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${filename}</title>
+                    <style>
+                        @page {
+                            margin: 0.5in 0.75in;
+                            size: A4;
+                            /* Note: To remove date/filename headers, disable headers/footers in print settings */
+                        }
+                        body {
+                            font-family: 'Times New Roman', Times, serif;
+                            font-size: 12pt;
+                            line-height: 1.6;
+                            color: #000;
+                            margin: 0;
+                            padding: 0;
+                            background: white;
+                        }
+                        .letterhead {
+                            page-break-inside: avoid;
+                            margin-bottom: 15px;
+                        }
+                        .letterhead table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            border: none !important;
+                        }
+                        .letterhead td {
+                            border: none !important;
+                        }
+                        .letterhead img {
+                            max-width: 45px;
+                            max-height: 45px;
+                            object-fit: contain;
+                        }
+                        .content {
+                            margin-top: 10px;
+                        }
+                        h1, h2, h3, h4, h5, h6 {
+                            font-family: 'Times New Roman', Times, serif;
+                            margin-top: 20px;
+                            margin-bottom: 10px;
+                        }
+                        p {
+                            margin-bottom: 10px;
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin: 10px 0;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f5f5f5;
+                            font-weight: bold;
+                        }
+                        @media print {
+                            @page {
+                                margin: 0.5in 0.75in;
+                                size: A4;
+                            }
+                            body { 
+                                -webkit-print-color-adjust: exact; 
+                                font-family: 'Times New Roman', Times, serif;
+                            }
+                            .letterhead { 
+                                page-break-inside: avoid; 
+                                margin-bottom: 15px;
+                            }
+                            .letterhead table,
+                            .letterhead td {
+                                border: none !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${finalContent}
+                </body>
+                </html>
+            `;
+
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+
+            // Wait for content to load, then print
+            printWindow.onload = () => {
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
+            };
+
+            // Try to hide browser print headers/footers by setting print settings
+            try {
+                if (printWindow.document) {
+                    printWindow.document.title = ''; // Remove title from header
+                }
+            } catch (e) {
+                // Ignore if cross-origin or other issues
+            }
+        } catch (error) {
+            console.error('Error exporting to PDF:', error);
+            alert('Failed to export PDF. Please try again.');
+        }
+    }
+
+    static async exportToWord(content: string, filename: string, currentStep?: string): Promise<void> {
+        try {
+            // Apply letterhead if needed
+            const finalContent = currentStep ? applyLetterheadToContent(content, currentStep) : content;
+            
+            // Create HTML document for Word export
+            const wordContent = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                      xmlns:w='urn:schemas-microsoft-com:office:word' 
+                      xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset="utf-8">
+                    <title>${filename}</title>
+                    <style>
+                        body {
+                            font-family: 'Times New Roman', Times, serif;
+                            font-size: 12pt;
+                            line-height: 1.6;
+                            margin: 1in;
+                        }
+                        .letterhead table {
+                            width: 100%;
+                            max-width: 8.5in;
+                            margin: 0 auto;
+                            border-collapse: collapse;
+                        }
+                        .letterhead img {
+                            max-width: 70px;
+                            max-height: 70px;
+                            object-fit: contain;
+                        }
+                        h1, h2, h3, h4, h5, h6 {
+                            font-family: 'Times New Roman', Times, serif;
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                            margin: 10px 0;
+                        }
+                        th, td {
+                            border: 1px solid #000;
+                            padding: 8px;
+                            text-align: left;
+                        }
+                        th {
+                            background-color: #f5f5f5;
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${finalContent}
+                </body>
+                </html>
+            `;
+
+            // Create blob and download
+            const blob = new Blob(['\ufeff', wordContent], {
+                type: 'application/msword'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename.endsWith('.doc') ? filename : `${filename}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting to Word:', error);
+            alert('Failed to export Word document. Please try again.');
+        }
+    }
+
+    static async exportToMarkdown(content: string, filename: string, currentStep?: string): Promise<void> {
+        try {
+            // For markdown, we'll include letterhead info as text
+            let finalContent = content;
+            
+            if (currentStep) {
+                const { needsLetterhead, getLetterheadConfig } = await import('./constants');
+                if (needsLetterhead(currentStep)) {
+                    const config = getLetterheadConfig();
+                    if (config) {
+                        const letterheadText = `
+# Republic of the Philippines
+## ${config.provinceOrCity.toUpperCase()} OF ${config.provinceCityName.toUpperCase()}
+### ${config.municipalityOrCity === 'city' ? 'City' : 'Municipality'} of ${config.municipalityCityName}
+#### Barangay ${config.barangayName}
+## OFFICE OF THE SANGGUNIANG KABATAAN
+
+---
+
+`;
+                        finalContent = letterheadText + content;
+                    }
+                }
+            }
+
+            // Convert HTML to basic markdown (simplified)
+            const markdownContent = finalContent
+                .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+                .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+                .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+                .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+                .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+                .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+                .replace(/<br\s*\/?>/gi, '\n')
+                .replace(/<[^>]*>/g, ''); // Remove remaining HTML tags
+
+            const blob = new Blob([markdownContent], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename.endsWith('.md') ? filename : `${filename}.md`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Error exporting to Markdown:', error);
+            alert('Failed to export Markdown file. Please try again.');
+        }
     }
 }
