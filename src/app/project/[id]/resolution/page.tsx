@@ -188,6 +188,7 @@ export default function ResolutionPage({ params }: ResolutionPageProps) {
                     isSaving={isSaving}
                     projectTitle={project?.title}
                     documentTitle={selectedDocument.title}
+                    currentStep="resolution"
                 />
                 <CardContent className="h-full p-0">
                     <div id="rich-editor-content" className="h-full">
@@ -195,6 +196,7 @@ export default function ResolutionPage({ params }: ResolutionPageProps) {
                             content={editingContent}
                             onChange={setEditingContent}
                             placeholder="Write your resolution documentation here...\n\nUse the toolbar above to format your text with headings, bold, italic, lists, and more."
+                            currentStep="resolution"
                         />
                     </div>
                 </CardContent>

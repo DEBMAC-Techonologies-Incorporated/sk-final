@@ -8,7 +8,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableHeader from '@tiptap/extension-table-header';
 import TableCell from '@tiptap/extension-table-cell';
 import { Button } from '@/components/ui/button';
-import { DEFAULT_EDITOR_HEADER } from '@/lib/constants';
+import { DEFAULT_EDITOR_HEADER, needsLetterhead, getLetterheadConfig, generateLetterheadHtml } from '@/lib/constants';
 import {
     Bold,
     Italic,
@@ -32,10 +32,40 @@ interface RichTextEditorProps {
     content: string;
     onChange: (content: string) => void;
     placeholder?: string;
+    currentStep?: string;
 }
 
-export default function RichTextEditor({ content, onChange, placeholder }: RichTextEditorProps) {
-    const fullContent = DEFAULT_EDITOR_HEADER + (content ? '<br>' + content : '');
+export default function RichTextEditor({ content, onChange, placeholder, currentStep }: RichTextEditorProps) {
+    // Determine if this document should show letterhead
+    const shouldShowLetterhead = currentStep && needsLetterhead(currentStep);
+    const letterheadConfig = shouldShowLetterhead ? getLetterheadConfig() : null;
+
+    // Create content with appropriate header
+    const getContentWithHeader = (): string => {
+        if (shouldShowLetterhead && letterheadConfig) {
+            // For documents with letterheads, clean any existing letterhead and show clean content only
+            let cleanContent = content || '';
+            
+            // Remove any letterhead HTML that might be in the content
+            cleanContent = cleanContent.replace(/<div[^>]*letterhead[^>]*>[\s\S]*?<\/div>/gi, '');
+            cleanContent = cleanContent.replace(/<table[^>]*>[\s\S]*?Republic of the Philippines[\s\S]*?SANGGUNIANG KABATAAN[\s\S]*?<\/table>/gi, '');
+            cleanContent = cleanContent.replace(/<div[^>]*>[\s\S]*?Republic of the Philippines[\s\S]*?SANGGUNIANG KABATAAN[\s\S]*?<\/div>/gi, '');
+            
+            // Clean up any empty elements or extra spacing that might result
+            cleanContent = cleanContent.replace(/<div[^>]*><\/div>/gi, '');
+            cleanContent = cleanContent.replace(/<p[^>]*><\/p>/gi, '');
+            cleanContent = cleanContent.replace(/^\s*<br[^>]*>\s*/gi, '');
+            cleanContent = cleanContent.trim();
+            
+            // Return clean content without letterhead - letterhead will only appear in PDF
+            return cleanContent || '';
+        } else {
+            // For documents without letterheads, add the default header to TipTap
+            return DEFAULT_EDITOR_HEADER + (content ? '<br>' + content : '');
+        }
+    };
+
+    const fullContent = getContentWithHeader();
 
     const editor = useEditor({
         extensions: [
@@ -67,6 +97,71 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
 
     return (
         <div className="w-full h-full flex flex-col">
+            {/* Non-editable Letterhead Preview - Only for documents that need letterheads */}
+            {shouldShowLetterhead && letterheadConfig && (
+                <div className="bg-white border-b-2 border-gray-300 p-6 print:hidden">
+                    <div className="max-w-full mx-auto">
+                        {/* Letterhead Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            {/* Left Logo */}
+                            <div className="w-20 h-20 flex items-center justify-center">
+                                {letterheadConfig.cityLogoUrl ? (
+                                    <img 
+                                        src={letterheadConfig.cityLogoUrl} 
+                                        alt="City Logo" 
+                                        className="w-20 h-20 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-400 text-center">
+                                        City<br/>Logo
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Center Text */}
+                            <div className="flex-1 text-center px-8">
+                                <div className="font-serif text-black leading-tight">
+                                    <div className="text-sm font-normal mb-1">Republic of the Philippines</div>
+                                    <div className="text-lg font-bold mb-1">
+                                        {letterheadConfig.provinceOrCity.toUpperCase()} OF {letterheadConfig.provinceCityName.toUpperCase()}
+                                    </div>
+                                    <div className="text-base font-normal mb-1">
+                                        {letterheadConfig.municipalityOrCity === 'city' ? 'City' : 'Municipality'} of {letterheadConfig.municipalityCityName}
+                                    </div>
+                                    <div className="text-sm font-normal mb-2">
+                                        Barangay {letterheadConfig.barangayName}
+                                    </div>
+                                    <div className="text-base font-bold">
+                                        OFFICE OF THE SANGGUNIANG KABATAAN
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Logo */}
+                            <div className="w-20 h-20 flex items-center justify-center">
+                                {letterheadConfig.skLogoUrl ? (
+                                    <img 
+                                        src={letterheadConfig.skLogoUrl} 
+                                        alt="SK Logo" 
+                                        className="w-20 h-20 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 border-2 border-gray-300 flex items-center justify-center text-xs text-gray-400 text-center">
+                                        SK<br/>Logo
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Horizontal Line */}
+                        <div className="border-t-3 border-black w-full"></div>
+                        
+                        {/* Small spacing after line */}
+                        <div className="mb-4"></div>
+                    </div>
+                </div>
+            )}
+
             {/* Toolbar */}
             <div className="border-b p-2 bg-gray-50 flex flex-wrap gap-1">
                 {/* Text Formatting */}
@@ -296,6 +391,27 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
                     </div>
                 )}
             </div>
+
+            {/* Add styles for PDF export */}
+            <style jsx global>{`
+                .letterhead-for-export {
+                    display: block !important;
+                    page-break-inside: avoid;
+                    margin-bottom: 20px;
+                }
+                
+                /* Ensure clean PDF rendering */
+                @media print {
+                    body {
+                        font-family: 'Times New Roman', Times, serif;
+                    }
+                }
+                
+                /* Custom border width for horizontal line */
+                .border-t-3 {
+                    border-top-width: 3px;
+                }
+            `}</style>
         </div>
     );
 }
