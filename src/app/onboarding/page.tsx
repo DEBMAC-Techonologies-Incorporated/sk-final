@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, FileText, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { Upload, FileText, DollarSign, AlertCircle, CheckCircle, File } from 'lucide-react';
 
 interface BudgetItem {
+  id: string;
   category: string;
   amount: number;
   description?: string;
@@ -23,6 +24,7 @@ export default function OnboardingPage() {
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [processingStep, setProcessingStep] = useState<string>('');
   const router = useRouter();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -31,26 +33,84 @@ export default function OnboardingPage() {
 
     setIsUploading(true);
     setError(null);
+    setProcessingStep('');
 
     try {
       // Check file type
-      if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx') && !file.name.endsWith('.json')) {
-        throw new Error('Please upload a CSV, Excel, or JSON file');
-      }
-
-      // Read file content
-      const text = await file.text();
-      let parsedData: BudgetData;
-
-      if (file.name.endsWith('.json')) {
-        parsedData = JSON.parse(text);
-      } else if (file.name.endsWith('.csv')) {
-        parsedData = parseCSV(text);
+      if (file.type === 'application/pdf') {
+        await handlePdfUpload(file);
+      } else if (file.name.endsWith('.csv') || file.name.endsWith('.xlsx') || file.name.endsWith('.json')) {
+        await handleDirectFileUpload(file);
       } else {
-        // For Excel files, we'll need a library like xlsx
-        throw new Error('Excel files are not supported yet. Please use CSV or JSON format.');
+        throw new Error('Please upload a PDF, CSV, Excel, or JSON file');
       }
 
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to process file');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePdfUpload = async (file: File) => {
+    setProcessingStep('Uploading PDF...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    console.log('File being uploaded:', {
+      name: file.name,
+      type: file.type,
+      size: file.size
+    });
+
+    try {
+      setProcessingStep('Analyzing PDF with AI...');
+      console.log('Sending fetch request to /api/parse-pdf');
+      const response = await fetch('/api/parse-pdf', {
+        method: 'POST',
+        body: formData
+      });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        throw new Error(`API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to parse PDF');
+      }
+
+      setProcessingStep('Processing extracted data...');
+      
+      // Use structured data if available, otherwise fall back to CSV parsing
+      let parsedData: BudgetData;
+      
+      if (data.structuredData && Array.isArray(data.structuredData)) {
+        // Use the structured data directly
+        const items: BudgetItem[] = data.structuredData.map((item: any) => ({
+          id: crypto.randomUUID(),
+          category: item.category,
+          amount: item.amount,
+          description: item.description,
+          committee_responsible: item.committee_responsible,
+          committee_oversight: item.committee_oversight,
+          abyip_ppa_activity: item.abyip_ppa_activity
+        }));
+        
+        const totalBudget = items.reduce((sum, item) => sum + item.amount, 0);
+        parsedData = { totalBudget, items };
+      } else {
+        // Fallback to CSV parsing
+        parsedData = parseCSV(data.csvData);
+      }
+      
       // Validate budget data
       validateBudgetData(parsedData);
       
@@ -65,12 +125,44 @@ export default function OnboardingPage() {
       setTimeout(() => {
         router.push('/');
       }, 2000);
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to process file');
-    } finally {
-      setIsUploading(false);
+      
+    } catch (error) {
+      console.error('PDF upload error:', error);
+      alert(`Error processing PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setProcessingStep('');
     }
+  };
+
+  const handleDirectFileUpload = async (file: File) => {
+    setProcessingStep('Processing file...');
+    
+    // Read file content
+    const text = await file.text();
+    let parsedData: BudgetData;
+
+    if (file.name.endsWith('.json')) {
+      parsedData = JSON.parse(text);
+    } else if (file.name.endsWith('.csv')) {
+      parsedData = parseCSV(text);
+    } else {
+      // For Excel files, we'll need a library like xlsx
+      throw new Error('Excel files are not supported yet. Please use CSV, JSON, or PDF format.');
+    }
+
+    // Validate budget data
+    validateBudgetData(parsedData);
+    
+    // Store in localStorage
+    localStorage.setItem('budgetData', JSON.stringify(parsedData));
+    localStorage.setItem('onboardingComplete', 'true');
+    
+    setBudgetData(parsedData);
+    setSuccess(true);
+    
+    // Redirect to dashboard after 2 seconds
+    setTimeout(() => {
+      router.push('/');
+    }, 2000);
   };
 
   const parseCSV = (csvText: string): BudgetData => {
@@ -101,6 +193,7 @@ export default function OnboardingPage() {
       }
 
       const item: BudgetItem = {
+        id: crypto.randomUUID(),
         category: values[categoryIndex],
         amount: amount,
         description: descriptionIndex >= 0 ? values[descriptionIndex] : undefined,
@@ -161,14 +254,15 @@ export default function OnboardingPage() {
                 <li>• Itemized breakdown of budget categories (PPA 1.1, 1.2, 2.1, etc.)</li>
                 <li>• Committee responsible for each budget cluster</li>
                 <li>• Optional descriptions for each category</li>
-                <li>• Supported formats: CSV, JSON</li>
+                <li>• Supported formats: PDF, CSV, JSON</li>
+                <li>• <strong>NEW:</strong> Upload PDF documents and AI will extract budget data automatically!</li>
               </ul>
             </div>
 
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-blue-400 transition-colors">
               <input
                 type="file"
-                accept=".csv,.json"
+                accept=".pdf,.csv,.json"
                 onChange={handleFileUpload}
                 className="hidden"
                 id="file-upload"
@@ -192,8 +286,35 @@ export default function OnboardingPage() {
                   <p className="text-sm text-muted-foreground">
                     Drag and drop or click to browse
                   </p>
+                  {processingStep && (
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                      {processingStep}
+                    </p>
+                  )}
                 </div>
               </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 dark:bg-green-900/20 dark:border-green-800">
+                <div className="flex items-center space-x-2 mb-2">
+                  <File className="w-5 h-5 text-green-600 dark:text-green-400" />
+                  <h4 className="font-semibold text-green-900 dark:text-green-100">PDF Upload</h4>
+                </div>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Upload PDF budget documents and our AI will automatically extract and format the data
+                </p>
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 dark:bg-blue-900/20 dark:border-blue-800">
+                <div className="flex items-center space-x-2 mb-2">
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  <h4 className="font-semibold text-blue-900 dark:text-blue-100">CSV/JSON Upload</h4>
+                </div>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  Upload pre-formatted CSV or JSON files with your budget data
+                </p>
+              </div>
             </div>
 
             <div className="text-center">
@@ -224,7 +345,7 @@ export default function OnboardingPage() {
             <h3 className="text-xl font-semibold text-foreground">Budget Uploaded Successfully!</h3>
             <div className="bg-muted rounded-lg p-4 text-left">
               <p className="text-sm text-muted-foreground mb-2">Budget Summary:</p>
-              <p className="font-medium">Total Budget: ${budgetData?.totalBudget.toLocaleString()}</p>
+              <p className="font-medium">Total Budget: ₱{budgetData?.totalBudget.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">{budgetData?.items.length} PPA categories</p>
               {budgetData?.items.some(item => item.committee_responsible) && (
                 <p className="text-sm text-muted-foreground mt-1">✓ Committee assignments included</p>

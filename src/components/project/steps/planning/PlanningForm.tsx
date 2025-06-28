@@ -153,13 +153,13 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
             // Check if total amount exceeds available budget
             if (amount > status.available) {
                 isValid = false;
-                message = `Purchase amount ($${amount.toLocaleString()}) exceeds total available budget ($${status.available.toLocaleString()})`;
+                message = `Purchase amount (₱${amount.toLocaleString()}) exceeds total available budget (₱${status.available.toLocaleString()})`;
             }
 
             // Check if amount exceeds selected activity's budget
             if (selectedPPA && selectedActivityBudget !== null && amount > selectedActivityBudget) {
                 isValid = false;
-                message = `Purchase amount ($${amount.toLocaleString()}) exceeds selected activity's available budget ($${selectedActivityBudget.toLocaleString()})`;
+                message = `Purchase amount (₱${amount.toLocaleString()}) exceeds selected activity's available budget (₱${selectedActivityBudget.toLocaleString()})`;
             }
 
             if (isValid) {
@@ -411,13 +411,13 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
                             <div>
                                 <p className="text-muted-foreground">Total Available</p>
                                 <p className={`font-medium ${budgetStatus.available < 1000 ? 'text-red-600' : 'text-foreground'}`}>
-                                    ${budgetStatus.available.toLocaleString()}
+                                    ₱{budgetStatus.available.toLocaleString()}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-muted-foreground">Purchase Amount</p>
                                 <p className="font-medium text-blue-600">
-                                    ${totalPRAmount ? parseFloat(totalPRAmount).toLocaleString() : '0'}
+                                    ₱{totalPRAmount ? parseFloat(totalPRAmount).toLocaleString() : '0'}
                                 </p>
                             </div>
                             <div>
@@ -425,7 +425,7 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
                                 <p className={`font-medium ${
                                     totalPRAmount && parseFloat(totalPRAmount) > budgetStatus.available ? 'text-red-600' : 'text-foreground'
                                 }`}>
-                                    ${totalPRAmount ? (budgetStatus.available - parseFloat(totalPRAmount)).toLocaleString() : budgetStatus.available.toLocaleString()}
+                                    ₱{totalPRAmount ? (budgetStatus.available - parseFloat(totalPRAmount)).toLocaleString() : budgetStatus.available.toLocaleString()}
                                 </p>
                             </div>
                         </div>
@@ -442,7 +442,7 @@ export default function PurchaseRequestForm({ isCompleted, onGenerate, isGenerat
                                     <div>
                                         <p className="text-muted-foreground">Available Budget</p>
                                         <p className={`font-medium ${selectedActivityBudget < 1000 ? 'text-red-600' : 'text-foreground'}`}>
-                                            ${selectedActivityBudget.toLocaleString()}
+                                            ₱{selectedActivityBudget.toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

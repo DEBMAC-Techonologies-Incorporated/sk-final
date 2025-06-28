@@ -72,14 +72,14 @@ export default function BudgetDisplay({ projectId, compact = false, showDetails 
           </div>
           <div className="flex items-center space-x-2">
             <span className={`text-sm font-medium ${getStatusColor(budgetStatus.status)}`}>
-              ${budgetStatus.available.toLocaleString()}
+              ₱{budgetStatus.available.toLocaleString()}
             </span>
             {getStatusIcon(budgetStatus.status)}
           </div>
         </div>
         {projectBudget && (
           <div className="mt-2 text-xs text-muted-foreground">
-            Project: ${projectBudget.allocatedAmount.toLocaleString()} allocated
+            Project: ₱{projectBudget.allocatedAmount.toLocaleString()} allocated
           </div>
         )}
       </div>
@@ -104,16 +104,16 @@ export default function BudgetDisplay({ projectId, compact = false, showDetails 
       <div className="grid grid-cols-3 gap-4 text-sm mb-3">
         <div>
           <p className="text-muted-foreground">Total</p>
-          <p className="font-medium text-green-600">${budgetStatus.total.toLocaleString()}</p>
+          <p className="font-medium text-green-600">₱{budgetStatus.total.toLocaleString()}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Allocated</p>
-          <p className="font-medium text-blue-600">${budgetStatus.allocated.toLocaleString()}</p>
+          <p className="font-medium text-blue-600">₱{budgetStatus.allocated.toLocaleString()}</p>
         </div>
         <div>
           <p className="text-muted-foreground">Available</p>
           <p className={`font-medium ${budgetStatus.available < 1000 ? 'text-red-600' : 'text-foreground'}`}>
-            ${budgetStatus.available.toLocaleString()}
+            ₱{budgetStatus.available.toLocaleString()}
           </p>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function BudgetDisplay({ projectId, compact = false, showDetails 
         </div>
         <div className="flex justify-between text-xs text-muted-foreground mt-1">
           <span>{budgetStatus.percentageUsed.toFixed(1)}% used</span>
-          <span>${budgetStatus.available.toLocaleString()} remaining</span>
+          <span>₱{budgetStatus.available.toLocaleString()} remaining</span>
         </div>
       </div>
 
@@ -140,7 +140,7 @@ export default function BudgetDisplay({ projectId, compact = false, showDetails 
           <div className="flex items-center justify-between text-sm">
             <div>
               <p className="text-muted-foreground">Allocated Amount</p>
-              <p className="font-medium text-foreground">${projectBudget.allocatedAmount.toLocaleString()}</p>
+              <p className="font-medium text-foreground">₱{projectBudget.allocatedAmount.toLocaleString()}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Category</p>
