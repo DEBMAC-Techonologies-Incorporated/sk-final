@@ -1,79 +1,24 @@
-# SK Projects Management System by DEBMAC
+# SK Projects - Budget Management System
 
-A streamlined Next.js application designed to manage SK Projects through a structured 5-step workflow process, providing teams with clear documentation and progress tracking capabilities.
+A comprehensive budget management system for Sangguniang Kabataan (SK) projects, featuring AI-powered PDF parsing and budget tracking.
 
-## 🚀 Features
+## Features
 
-### Core Functionality
-- **Multi-project dashboard** with visual progress tracking
-- **5-step workflow system**: Planning → Approval → Resolution → DV → Withdrawal
-- **Markdown editor** for each step with live preview
-- **Local storage** persistence (no backend required)
-- **Export functionality** to download complete project documentation
-- **Responsive design** that works on desktop and mobile
+- **AI-Powered PDF Parsing**: Upload PDF budget documents and automatically extract budget data using Google Gemini AI
+- **Multiple File Format Support**: Upload PDF, CSV, or JSON files
+- **Budget Tracking**: Monitor SK budget aligned with PPAs (Programs, Projects, Activities)
+- **Committee Management**: Assign and track committee responsibilities
+- **ABYIP Integration**: Align budget items with ABYIP (Annual Barangay Youth Investment Plan) activities
+- **Document Generation**: Generate reports and documents
+- **Modern UI**: Beautiful, responsive interface with dark mode support
 
-### Project Management
-- Create and manage multiple SK projects
-- Track completion status for each step
-- Search and filter projects
-- Visual progress indicators
-- Project statistics and analytics
-
-### Documentation Features
-- Rich markdown editing with syntax highlighting
-- Live preview of formatted content
-- Auto-save functionality
-- Step-by-step navigation
-- Export to markdown format
-
-## 🛠️ Technology Stack
-
-- **Framework**: Next.js 14+ with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Custom component library with shadcn/ui inspiration
-- **Icons**: Lucide React
-- **Storage**: Browser LocalStorage
-- **Build Tool**: npm
-
-## 📋 Project Structure
-
-```
-sk-final/
-├── src/
-│   ├── app/
-│   │   ├── project/[id]/        # Project detail pages
-│   │   ├── globals.css          # Global styles
-│   │   ├── layout.tsx           # Root layout
-│   │   └── page.tsx            # Dashboard (homepage)
-│   ├── components/
-│   │   └── ui/                 # Reusable UI components
-│   │       ├── button.tsx
-│   │       └── card.tsx
-│   └── lib/
-│       ├── storage.ts          # LocalStorage utilities
-│       ├── types.ts            # TypeScript interfaces
-│       └── utils.ts            # Helper functions
-├── PROJECT_OVERVIEW.md         # Detailed system overview
-├── package.json
-└── README.md
-```
-
-## 🎯 5-Step Workflow
-
-Each SK project follows this structured workflow:
-
-1. **Planning** - Initial project scope, requirements, and strategy documentation
-2. **Approval** - Stakeholder review, sign-offs, and authorization documents  
-3. **Resolution** - Implementation details, technical solutions, and execution plans
-4. **DV (Design Verification)** - Testing, validation, and quality assurance documentation
-5. **Withdrawal** - Project closure, lessons learned, and final reports
-
-## 🚀 Getting Started
+## Setup Instructions
 
 ### Prerequisites
+
 - Node.js 18+ 
 - npm or yarn
+- Google Gemini AI API key
 
 ### Installation
 
@@ -88,117 +33,85 @@ cd sk-final
 npm install
 ```
 
-3. Start the development server:
+3. Set up environment variables:
+Create a `.env.local` file in the root directory and add your Google Gemini API key:
+```bash
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+To get a Google Gemini API key:
+1. Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Create a new API key
+3. Copy the key and paste it in your `.env.local` file
+
+4. Run the development server:
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-### Usage
+## Usage
 
-#### Creating a New Project
-1. Click "New Project" on the dashboard
-2. Enter project title and description
-3. Click "Create Project"
-4. You'll be redirected to the project detail page
+### Onboarding Process
 
-#### Working with Steps
-1. Navigate to a project from the dashboard
-2. Use the step navigation to switch between the 5 workflow steps
-3. Enter content using markdown formatting in the editor
-4. Click "Save" to persist changes
-5. Mark steps as complete when finished
-6. Export the entire project as a markdown file
+1. **Upload Budget File**: 
+   - **PDF Upload**: Upload PDF budget documents and AI will automatically extract and format the data
+   - **CSV/JSON Upload**: Upload pre-formatted files with your budget data
+   - Download the CSV template for reference
 
-#### Markdown Support
-The editor supports standard markdown formatting:
-- `# Heading` for headings
-- `**bold**` for bold text
-- `*italic*` for italic text
-- `` `code` `` for inline code
-- `- item` for bullet points
-- `1. item` for numbered lists
+2. **Budget Format**: The system expects budget data with the following columns:
+   - `category`: Budget category or PPA name (e.g., "PPA 1.1 - Infrastructure Development")
+   - `amount`: Budget amount (numeric value)
+   - `description`: Brief description (optional)
+   - `committee_responsible`: Committee responsible (optional)
+   - `committee_oversight`: Committee providing oversight (optional)
+   - `abyip_ppa_activity`: ABYIP-aligned PPA/Activity name (optional)
 
-## 📊 Features in Detail
+### AI PDF Parsing
 
-### Dashboard
-- **Project Cards**: Visual cards showing project title, description, and progress
-- **Progress Indicators**: 5-step progress bars with completion percentages
-- **Search**: Real-time search through project titles and descriptions
-- **Statistics**: Total projects, completed projects, and in-progress counts
+The system uses Google Gemini AI to automatically extract budget information from PDF documents:
 
-### Project Detail Page
-- **Step Navigation**: Tab-based navigation between the 5 workflow steps
-- **Markdown Editor**: Full-featured text editor with markdown support
-- **Live Preview**: Real-time preview of formatted markdown content
-- **Progress Tracking**: Visual progress indicator and step completion status
-- **Export**: Download complete project documentation as markdown file
+- Upload any PDF containing budget information
+- AI will identify PPA categories, amounts, and other relevant data
+- Data is automatically formatted to match the required CSV structure
+- Results are validated and stored for budget management
 
-### Data Management
-- **Auto-save**: Content is automatically saved when switching steps
-- **Local Storage**: All data persisted in browser localStorage
-- **Data Import/Export**: Export projects as markdown files
-- **No Backend Required**: Fully client-side application
+## File Structure
 
-## 🔧 Configuration
-
-### Customizing Steps
-To modify the 5-step workflow, edit the `PROJECT_STEPS` array in `src/lib/types.ts`:
-
-```typescript
-export const PROJECT_STEPS = [
-  {
-    key: 'planning',
-    label: 'Planning',
-    description: 'Your custom description'
-  },
-  // ... other steps
-];
+```
+src/
+├── app/
+│   ├── api/
+│   │   └── parse-pdf/          # PDF parsing API endpoint
+│   ├── onboarding/             # Onboarding page with file upload
+│   ├── budget/                 # Budget management pages
+│   └── project/                # Project management pages
+├── components/                 # Reusable UI components
+└── lib/                        # Utility functions
 ```
 
-### Styling
-The application uses Tailwind CSS with a custom design system. Colors and themes can be modified in:
-- `src/app/globals.css` - CSS custom properties
-- `tailwind.config.ts` - Tailwind configuration
+## API Endpoints
 
-## 📱 Browser Support
+- `POST /api/parse-pdf`: Parse PDF files using Google Gemini AI
+  - Accepts multipart form data with PDF file
+  - Returns CSV-formatted budget data
 
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
+## Technologies Used
 
-## 🤝 Contributing
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **AI Integration**: Google Gemini AI (@google/generative-ai)
+- **File Processing**: Built-in browser APIs for PDF/CSV handling
+- **UI Components**: Lucide React icons, custom components
+
+## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## 📈 Future Enhancements
+## License
 
-- [ ] Database integration (PostgreSQL/MongoDB)
-- [ ] User authentication and team collaboration
-- [ ] Advanced markdown editor with WYSIWYG mode
-- [ ] Project templates and workflows
-- [ ] API integration for third-party tools
-- [ ] Advanced analytics and reporting
-- [ ] Mobile app development
-- [ ] Real-time collaboration features
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🆘 Support
-
-For support, please open an issue in the GitHub repository or contact the development team.
-
-## 🙏 Acknowledgments
-
-- Next.js team for the excellent framework
-- Tailwind CSS for the utility-first CSS framework
-- Lucide for the beautiful icons
-- The open-source community for inspiration and tools
+This project is licensed under the MIT License.

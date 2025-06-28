@@ -9,13 +9,15 @@ interface BudgetAllocationFormProps {
   onBudgetAllocated: (amount: number, category: string) => void;
   initialAmount?: number;
   initialCategory?: string;
+  onBudgetChange?: () => void;
 }
 
 export default function BudgetAllocationForm({
   projectId,
   onBudgetAllocated,
   initialAmount = 0,
-  initialCategory = ''
+  initialCategory = '',
+  onBudgetChange
 }: BudgetAllocationFormProps) {
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
   const [amount, setAmount] = useState(initialAmount);
@@ -83,17 +85,37 @@ export default function BudgetAllocationForm({
       return;
     }
 
-    const validation = budgetManager.validateBudgetAllocation(amount, category, projectId);
+    // Find the selected item by ABYIP or category
+    const item = budgetData?.items.find(i =>
+      (selectedAbyip && i.abyip_ppa_activity === selectedAbyip) ||
+      (!selectedAbyip && i.category === category)
+    );
+    if (!item) {
+      setValidation({ valid: false, message: 'Could not find the selected budget item.' });
+      return;
+    }
+
+    // Optionally update validation to use item.category
+    const validation = budgetManager.validateBudgetAllocation(amount, item.category, projectId);
     if (!validation.valid) {
       setValidation(validation);
       return;
     }
 
-    const success = budgetManager.allocateBudget(projectId, amount, category, description);
+    const success = budgetManager.allocateBudget(projectId, amount, item.id, item.category, description);
     if (success) {
       setIsAllocated(true);
-      onBudgetAllocated(amount, category);
+      onBudgetAllocated(amount, item.category);
       setValidation({ valid: true, message: 'Budget allocated successfully!' });
+      // PHASE 1: Refresh local state after allocation
+      const data = budgetManager.loadBudgetData();
+      if (data) {
+        setBudgetData(data);
+        budgetManager.loadProjectBudgets();
+      }
+      if (typeof onBudgetChange === 'function') {
+        onBudgetChange();
+      }
     } else {
       setValidation({ valid: false, message: 'Failed to allocate budget' });
     }

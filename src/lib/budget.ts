@@ -1,4 +1,5 @@
 export interface BudgetItem {
+  id: string;
   category: string;
   amount: number;
   description?: string;
@@ -15,6 +16,7 @@ export interface BudgetData {
 export interface ProjectBudget {
   projectId: string;
   allocatedAmount: number;
+  itemId: string;
   category: string;
   description?: string;
 }
@@ -73,7 +75,7 @@ export class BudgetManager {
     return categoryTotal - categoryAllocated;
   }
 
-  allocateBudget(projectId: string, amount: number, category: string, description?: string): boolean {
+  allocateBudget(projectId: string, amount: number, itemId: string, category: string, description?: string): boolean {
     if (amount <= 0) return false;
     
     // Check if category has enough budget
@@ -88,6 +90,7 @@ export class BudgetManager {
     this.projectBudgets.push({
       projectId,
       allocatedAmount: amount,
+      itemId,
       category,
       description
     });
@@ -252,6 +255,10 @@ export class BudgetManager {
     const total = this.getTotalBudget();
     const allocated = this.getTotalAllocatedBudget();
     return Math.max(0, allocated - total);
+  }
+
+  getAllocationsForItem(itemId: string): ProjectBudget[] {
+    return this.projectBudgets.filter(budget => budget.itemId === itemId);
   }
 }
 

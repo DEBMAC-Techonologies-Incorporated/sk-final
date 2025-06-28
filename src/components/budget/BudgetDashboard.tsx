@@ -13,13 +13,17 @@ export default function BudgetDashboard() {
     percentageUsed: 0
   });
 
-  useEffect(() => {
+  const refreshBudgetData = () => {
     const data = budgetManager.loadBudgetData();
     if (data) {
       setBudgetData(data);
       budgetManager.loadProjectBudgets();
       setSummary(budgetManager.getBudgetSummary());
     }
+  };
+
+  useEffect(() => {
+    refreshBudgetData();
   }, []);
 
   if (!budgetData) {
@@ -98,7 +102,6 @@ export default function BudgetDashboard() {
                 summary.percentageUsed < 50 ? 'bg-green-500' :
                 summary.percentageUsed < 80 ? 'bg-yellow-500' : 'bg-red-500'
               }`}
-              style={{ width: `${Math.min(summary.percentageUsed, 100)}%` }}
             ></div>
           </div>
         </div>
@@ -110,15 +113,14 @@ export default function BudgetDashboard() {
           <PieChart className="w-5 h-5 text-blue-600" />
           <span>Budget Categories</span>
         </h3>
-        
         <div className="space-y-4">
           {budgetData.items.map((item) => {
-            const available = budgetManager.getCategoryAvailableBudget(item.category);
-            const used = item.amount - available;
+            const allocations = budgetManager.getAllocationsForItem(item.id);
+            const used = allocations.reduce((sum: number, alloc: { allocatedAmount: number }) => sum + alloc.allocatedAmount, 0);
+            const available = item.amount - used;
             const percentage = item.amount > 0 ? (used / item.amount) * 100 : 0;
-            
             return (
-              <div key={item.category} className="border border-border rounded-lg p-4">
+              <div key={item.id} className="border border-border rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h4 className="font-medium text-foreground">{item.category}</h4>
@@ -144,7 +146,6 @@ export default function BudgetDashboard() {
                     </p>
                   </div>
                 </div>
-                
                 <div className="w-full bg-muted rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-300 ${
@@ -154,7 +155,6 @@ export default function BudgetDashboard() {
                     style={{ width: `${Math.min(percentage, 100)}%` }}
                   ></div>
                 </div>
-                
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
                   <span>Available: ₱{available.toLocaleString()}</span>
                   <span>Used: ₱{used.toLocaleString()}</span>
@@ -179,6 +179,7 @@ export default function BudgetDashboard() {
           </button>
         </div>
       </div>
+      {/* Example: <BudgetAllocationForm onBudgetChange={refreshBudgetData} ... /> */}
     </div>
   );
-} 
+}
