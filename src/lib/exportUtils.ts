@@ -1,7 +1,6 @@
 "use client";
 
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 export class ExportUtils {
     /**
@@ -72,7 +71,7 @@ export class ExportUtils {
     }
 
     /**
-     * Export element as PDF
+     * Export HTML content directly to PDF using jsPDF's HTML functionality
      */
     static async exportPdf(elementId: string, filename: string) {
         const element = document.getElementById(elementId);
@@ -82,38 +81,81 @@ export class ExportUtils {
         }
 
         try {
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: '#ffffff'
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'mm',
+                format: 'a4'
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF();
+            // Create a clean HTML version for PDF
+            const cleanHtml = this.prepareHtmlForPdf(element.innerHTML);
             
-            // A4 dimensions in mm
-            const imgWidth = 210;
-            const pageHeight = 295;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 0;
-
-            // Add first page
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-
-            // Add additional pages if content is longer than one page
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
-            }
-
-            pdf.save(`${filename}.pdf`);
+            // Use jsPDF's html method to convert HTML to PDF
+            await pdf.html(cleanHtml, {
+                callback: function (pdf) {
+                    pdf.save(`${filename}.pdf`);
+                },
+                x: 15,
+                y: 15,
+                width: 180, // A4 width minus margins
+                windowWidth: 650,
+                margin: [10, 10, 10, 10],
+                autoPaging: 'text',
+                html2canvas: {
+                    allowTaint: true,
+                    useCORS: true,
+                    scale: 0.25
+                }
+            });
         } catch (error) {
             console.error('Error generating PDF:', error);
+            // Fallback to a simpler text-based PDF
+            this.exportSimplePdf(element, filename);
         }
+    }
+
+    /**
+     * Fallback method for simple text-based PDF export
+     */
+    private static exportSimplePdf(element: HTMLElement, filename: string) {
+        const pdf = new jsPDF();
+        const text = element.innerText || element.textContent || '';
+        
+        // Split text into lines that fit the page width
+        const lines = pdf.splitTextToSize(text, 180);
+        
+        let yPosition = 20;
+        const pageHeight = 280;
+        const lineHeight = 7;
+
+        lines.forEach((line: string) => {
+            if (yPosition > pageHeight) {
+                pdf.addPage();
+                yPosition = 20;
+            }
+            pdf.text(line, 15, yPosition);
+            yPosition += lineHeight;
+        });
+
+        pdf.save(`${filename}.pdf`);
+    }
+
+    /**
+     * Prepare HTML content for PDF conversion
+     */
+    private static prepareHtmlForPdf(html: string): string {
+        return `
+            <div style="
+                font-family: 'Times New Roman', serif;
+                font-size: 12pt;
+                line-height: 1.4;
+                color: #000;
+                max-width: 100%;
+                word-wrap: break-word;
+            ">
+                ${html}
+            </div>
+        `;
     }
 
     /**
