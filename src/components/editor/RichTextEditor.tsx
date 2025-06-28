@@ -23,7 +23,9 @@ import {
     AlignRight,
     Table as TableIcon,
     Plus,
-    Minus
+    Minus,
+    Columns,
+    Rows
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -145,6 +147,8 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
                     >
                         <TableIcon className="h-4 w-4" />
                     </Button>
+                    
+                    {/* Column Controls */}
                     <Button
                         variant="ghost"
                         size="sm"
@@ -152,7 +156,22 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
                         disabled={!editor.can().addColumnBefore()}
                         title="Add Column Before"
                     >
-                        <Plus className="h-4 w-4" />
+                        <div className="flex items-center">
+                            <Plus className="h-3 w-3" />
+                            <Columns className="h-3 w-3" />
+                        </div>
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().addColumnAfter().run()}
+                        disabled={!editor.can().addColumnAfter()}
+                        title="Add Column After"
+                    >
+                        <div className="flex items-center">
+                            <Columns className="h-3 w-3" />
+                            <Plus className="h-3 w-3" />
+                        </div>
                     </Button>
                     <Button
                         variant="ghost"
@@ -161,7 +180,48 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
                         disabled={!editor.can().deleteColumn()}
                         title="Delete Column"
                     >
-                        <Minus className="h-4 w-4" />
+                        <div className="flex items-center">
+                            <Minus className="h-3 w-3" />
+                            <Columns className="h-3 w-3" />
+                        </div>
+                    </Button>
+                    
+                    {/* Row Controls */}
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().addRowBefore().run()}
+                        disabled={!editor.can().addRowBefore()}
+                        title="Add Row Before"
+                    >
+                        <div className="flex flex-col items-center">
+                            <Plus className="h-3 w-3" />
+                            <Rows className="h-3 w-3" />
+                        </div>
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().addRowAfter().run()}
+                        disabled={!editor.can().addRowAfter()}
+                        title="Add Row After"
+                    >
+                        <div className="flex flex-col items-center">
+                            <Rows className="h-3 w-3" />
+                            <Plus className="h-3 w-3" />
+                        </div>
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().deleteRow().run()}
+                        disabled={!editor.can().deleteRow()}
+                        title="Delete Row"
+                    >
+                        <div className="flex flex-col items-center">
+                            <Minus className="h-3 w-3" />
+                            <Rows className="h-3 w-3" />
+                        </div>
                     </Button>
                 </div>
 
