@@ -198,7 +198,7 @@ export default function Dashboard() {
                       Total Available Budget
                     </h2>
                     <div className="text-7xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-700 mb-3">
-                      ${budgetSummary.available.toLocaleString()}
+                      ₱{budgetSummary.available.toLocaleString()}
                     </div>
                     <p className="text-blue-600 text-xl font-medium">
                       Ready to allocate
@@ -209,13 +209,13 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 gap-12 max-w-lg mx-auto mb-8">
                     <div className="text-center p-4 bg-white/60 rounded-xl border border-blue-100 shadow-sm">
                       <div className="text-3xl font-bold text-gray-800 mb-1">
-                        ${budgetSummary.total.toLocaleString()}
+                        ₱{budgetSummary.total.toLocaleString()}
                       </div>
                       <p className="text-sm text-gray-600 font-medium">Total Budget</p>
                     </div>
                     <div className="text-center p-4 bg-white/60 rounded-xl border border-blue-100 shadow-sm">
                       <div className="text-3xl font-bold text-gray-800 mb-1">
-                        ${budgetSummary.allocated.toLocaleString()}
+                        ₱{budgetSummary.allocated.toLocaleString()}
                       </div>
                       <p className="text-sm text-gray-600 font-medium">Allocated</p>
                     </div>
@@ -238,8 +238,8 @@ export default function Dashboard() {
                       ></div>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-3 font-medium">
-                      <span>${budgetSummary.allocated.toLocaleString()} used</span>
-                      <span className="text-blue-600">${budgetSummary.available.toLocaleString()} remaining</span>
+                      <span>₱{budgetSummary.allocated.toLocaleString()} used</span>
+                      <span className="text-blue-600">₱{budgetSummary.available.toLocaleString()} remaining</span>
                     </div>
                   </div>
 

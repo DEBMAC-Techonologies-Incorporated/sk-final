@@ -151,16 +151,16 @@ export default function BudgetAllocationForm({
         <div className="grid grid-cols-3 gap-4 text-sm mb-3">
           <div>
             <p className="text-muted-foreground">Total Budget</p>
-            <p className="font-medium text-green-600">${summary.total.toLocaleString()}</p>
+            <p className="font-medium text-green-600">₱{summary.total.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Allocated</p>
-            <p className="font-medium text-blue-600">${summary.allocated.toLocaleString()}</p>
+            <p className="font-medium text-blue-600">₱{summary.allocated.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Available</p>
             <p className={`font-medium ${summary.available < 1000 ? 'text-red-600' : 'text-foreground'}`}>
-              ${summary.available.toLocaleString()}
+              ₱{summary.available.toLocaleString()}
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function BudgetAllocationForm({
           </div>
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>{summary.percentageUsed.toFixed(1)}% used</span>
-            <span>${summary.available.toLocaleString()} remaining</span>
+            <span>₱{summary.available.toLocaleString()} remaining</span>
           </div>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function BudgetAllocationForm({
           </select>
           {selectedAbyip && budgetData && (
             <div className="mt-1 text-xs text-muted-foreground">
-              Available Budget: $
+              Available Budget: ₱
               {(() => {
                 const item = budgetData.items.find(i => i.abyip_ppa_activity === selectedAbyip);
                 return item ? budgetManager.getCategoryAvailableBudget(item.category).toLocaleString() : '0';
@@ -249,7 +249,7 @@ export default function BudgetAllocationForm({
         {/* Amount */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
-            Amount ($)
+            Amount (₱)
           </label>
           <input
             type="number"
@@ -368,12 +368,12 @@ export default function BudgetAllocationForm({
                     )}
                   </div>
                   <div className="text-right">
-                    <p className="font-medium text-foreground">${used.toLocaleString()} / ${item.amount.toLocaleString()}</p>
+                    <p className="font-medium text-foreground">₱{used.toLocaleString()} / ₱{item.amount.toLocaleString()}</p>
                     <p className={`text-xs ${getStatusColor(categoryStatus.status)}`}>
                       {percentage.toFixed(1)}% used
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Available: ${available.toLocaleString()}
+                      Available: ₱{available.toLocaleString()}
                     </p>
                   </div>
                 </div>

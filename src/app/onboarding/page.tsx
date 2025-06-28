@@ -224,7 +224,7 @@ export default function OnboardingPage() {
             <h3 className="text-xl font-semibold text-foreground">Budget Uploaded Successfully!</h3>
             <div className="bg-muted rounded-lg p-4 text-left">
               <p className="text-sm text-muted-foreground mb-2">Budget Summary:</p>
-              <p className="font-medium">Total Budget: ${budgetData?.totalBudget.toLocaleString()}</p>
+              <p className="font-medium">Total Budget: ₱{budgetData?.totalBudget.toLocaleString()}</p>
               <p className="text-sm text-muted-foreground">{budgetData?.items.length} PPA categories</p>
               {budgetData?.items.some(item => item.committee_responsible) && (
                 <p className="text-sm text-muted-foreground mt-1">✓ Committee assignments included</p>

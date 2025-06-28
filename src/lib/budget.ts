@@ -153,7 +153,7 @@ export class BudgetManager {
     if (amount > adjustedAvailable) {
       return { 
         valid: false, 
-        message: `Insufficient budget in ${category}. Available: $${adjustedAvailable.toLocaleString()}, Requested: $${amount.toLocaleString()}` 
+        message: `Insufficient budget in ${category}. Available: ₱${adjustedAvailable.toLocaleString()}, Requested: ₱${amount.toLocaleString()}` 
       };
     }
 
@@ -169,7 +169,7 @@ export class BudgetManager {
     if (amount > adjustedAvailable) {
       return { 
         valid: false, 
-        message: `This allocation would exceed total available budget. Available: $${adjustedAvailable.toLocaleString()}, Requested: $${amount.toLocaleString()}` 
+        message: `This allocation would exceed total available budget. Available: ₱${adjustedAvailable.toLocaleString()}, Requested: ₱${amount.toLocaleString()}` 
       };
     }
 

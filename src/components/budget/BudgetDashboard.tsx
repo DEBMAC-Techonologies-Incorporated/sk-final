@@ -69,19 +69,19 @@ export default function BudgetDashboard() {
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">Total Budget</p>
             <p className="text-2xl font-bold text-green-600">
-              ${summary.total.toLocaleString()}
+              ₱{summary.total.toLocaleString()}
             </p>
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">Allocated</p>
             <p className="text-2xl font-bold text-blue-600">
-              ${summary.allocated.toLocaleString()}
+              ₱{summary.allocated.toLocaleString()}
             </p>
           </div>
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-1">Available</p>
             <p className="text-2xl font-bold text-foreground">
-              ${summary.available.toLocaleString()}
+              ₱{summary.available.toLocaleString()}
             </p>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function BudgetDashboard() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium text-foreground">
-                      ${used.toLocaleString()} / ${item.amount.toLocaleString()}
+                      ₱{used.toLocaleString()} / ₱{item.amount.toLocaleString()}
                     </p>
                     <p className={`text-sm ${getStatusColor(percentage)}`}>
                       {percentage.toFixed(1)}% used
@@ -156,8 +156,8 @@ export default function BudgetDashboard() {
                 </div>
                 
                 <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                  <span>Available: ${available.toLocaleString()}</span>
-                  <span>Used: ${used.toLocaleString()}</span>
+                  <span>Available: ₱{available.toLocaleString()}</span>
+                  <span>Used: ₱{used.toLocaleString()}</span>
                 </div>
               </div>
             );
