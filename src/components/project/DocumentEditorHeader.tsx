@@ -29,7 +29,7 @@ export default function DocumentEditorHeader({
     isSaving,
     projectTitle,
     documentTitle,
-    editorContentId = 'rich-editor-content'
+    editorContentId = 'editor-content-for-export'
 }: DocumentEditorHeaderProps) {
     const characterCount = content.replace(/<[^>]*>/g, '').length;
     const exportFileName = projectTitle && documentTitle
