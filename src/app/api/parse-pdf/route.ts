@@ -44,47 +44,42 @@ You are an expert financial document parser specializing in Sangguniang Kabataan
 ### TASK ###
 Extract budget information from the provided PDF document and return it in a specific JSON format.
 
+### DOCUMENT STRUCTURE ###
+- The document contains sections like "GENERAL ADMINISTRATION PROGRAM" and "YOUTH DEVELOPMENT AND EMPOWERMENT PROGRAM".
+- Each section may have subcategories (e.g., "PERSONAL SERVICE", "MAINTENANCE AND OTHER OPERATING EXPENSES (MOOE)", "CAPITAL OUTLAY").
+- Each budget item has an amount (e.g., "PHP 248,400.00" or "₱248,400.00"), a category, and a description (sometimes as a bulleted or indented line below the amount).
+- Some items have a schedule/months (e.g., "June - December 2025").
+- Some items are grouped under a main program/category.
+- Committees and ABYIP activities may not be specified; leave those fields blank if not found.
+
 ### EXTRACTION RULES ###
-1. **PPA Identification**: Look for patterns like "PPA 1.1", "PPA 2.1", "Program 1.1", "Activity 1.1"
+1. **Category Identification**: Use the main program or subcategory as the category (e.g., "GENERAL ADMINISTRATION PROGRAM - PERSONAL SERVICE").
 2. **Amount Processing**: 
-   - Extract numeric values only (e.g., "₱50,000.00" → 50000)
+   - Extract numeric values only (e.g., "PHP 50,000.00" or "₱50,000.00" → 50000)
    - Remove all currency symbols, commas, and spaces
    - Convert to integer format
-3. **Committee Mapping**: Identify committees like "Infrastructure Committee", "Education Committee", "Health Committee"
-4. **ABYIP Alignment**: Look for ABYIP references and align with corresponding PPA activities
-5. **Data Validation**: Ensure each item has at least category and amount
+3. **Description**: Use the indented or bulleted line(s) below the amount as the description. If not available, use the category name.
+4. **Schedule**: If a schedule/months is present, append it to the description.
+5. **Committee/ABYIP**: Leave blank if not specified.
+6. **Data Validation**: Ensure each item has at least category and amount.
 
-### PROCESSING STEPS ###
-1. Scan the entire PDF for budget-related information
-2. Identify all PPA categories and their corresponding amounts
-3. Extract descriptions and committee assignments where available
-4. Map ABYIP activities to their corresponding PPAs
-5. Format all data into the specified JSON structure
-6. Validate that amounts are numeric and categories are properly labeled
-
-### QUALITY STANDARDS ###
-- **Accuracy**: Ensure extracted amounts match the source document exactly
-- **Completeness**: Include all budget items found in the document
-- **Consistency**: Use consistent formatting for PPA categories and committee names
-- **Validation**: Verify that the total of individual amounts matches any stated total budget
-
-### ERROR HANDLING ###
-- If a field is not available in the document, leave it undefined
-- If amounts are unclear or ambiguous, use the most reasonable interpretation
-- If PPA categories are not clearly labeled, infer from context and descriptions
+### ABYIP ACTIVITY MAPPING ###
+- If ABYIP PPA Activity is not explicitly stated in the document, use the description as the ABYIP activity
+- Format: "ABYIP - [Description]" (e.g., "ABYIP - Honorarium of SK Officials")
+- If no description is available, use the category name as the ABYIP activity
+- This ensures all budget items have a corresponding ABYIP activity for project allocation
 
 ### OUTPUT FORMAT ###
 You MUST return ONLY a valid JSON object with this exact structure:
-
 {
   "budgetItems": [
     {
-      "category": "PPA 1.1 - Infrastructure Development",
-      "amount": 50000,
-      "description": "Community infrastructure projects and facilities improvement",
-      "committee_responsible": "Infrastructure Committee",
-      "committee_oversight": "Executive Committee",
-      "abyip_ppa_activity": "ABYIP 1.1 - Community Center Construction"
+      "category": "GENERAL ADMINISTRATION PROGRAM - PERSONAL SERVICE",
+      "amount": 248400,
+      "description": "Honorarium of SK Officials",
+      "committee_responsible": "",
+      "committee_oversight": "",
+      "abyip_ppa_activity": ""
     }
   ]
 }
@@ -142,32 +137,60 @@ You MUST return ONLY a valid JSON object with this exact structure:
       
       // Fallback: try to extract budget items from text response
       const budgetItems = [];
-      
-      // Look for patterns like "PPA X.X - Description" and amounts
-      const ppaPattern = /PPA\s+(\d+\.\d+)\s*-\s*([^,\n]+)/gi;
-      const amountPattern = /₱?([\d,]+\.?\d*)/g;
-      
-      let match;
-      while ((match = ppaPattern.exec(responseText)) !== null) {
-        const category = match[0].trim();
-        
-        // Look for amount near this PPA
-        const afterMatch = responseText.substring(match.index + match[0].length);
-        const amountMatch = afterMatch.match(/₱?([\d,]+\.?\d*)/);
-        const amount = amountMatch ? parseInt(amountMatch[1].replace(/[,₱]/g, '')) : 0;
-        
-        if (amount > 0) {
+      // Improved fallback: extract PHP/₱ amounts, group by program/category, and use indented/bulleted lines as description
+      const lines = responseText.split(/\r?\n/).map(l => l.trim());
+      let currentProgram = '';
+      let currentSubcategory = '';
+      let lastAmount = null;
+      let lastCategory = '';
+      let lastDescription = '';
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Detect program/category headers
+        if (/^(GENERAL ADMINISTRATION|YOUTH DEVELOPMENT|EMPOWERMENT PROGRAM|FINANCIAL ASSISTANCE|GRAND TOTAL|TOTAL)/i.test(line)) {
+          currentProgram = line.replace(/^(TOTAL |GRAND TOTAL )/i, '').trim();
+          currentSubcategory = '';
+          continue;
+        }
+        // Detect subcategories
+        if (/^(PERSONAL SERVICE|MAINTENANCE AND OTHER OPERATING EXPENSES|CAPITAL OUTLAY|EQUITABLE FOR ACCESS EDUCATION|ENVIRONMENT PROTECTION|CLIMATE CHANGE|HEALTH|ANTI-DRUG ABUSE PROGRAM|GENDER SENSITIVITY|SPORTS DEVELOPMENT|CAPABILITY BUILDING|YOUTH EMPOWERMENT|LINGGO NG KABATAAN|AGRICULTURE)/i.test(line)) {
+          currentSubcategory = line;
+          continue;
+        }
+        // Detect amount lines
+        const amountMatch = line.match(/(?:PHP|₱)\s*([\d,.]+)/i);
+        if (amountMatch) {
+          lastAmount = parseFloat(amountMatch[1].replace(/[, ]/g, ''));
+          lastCategory = currentProgram + (currentSubcategory ? ' - ' + currentSubcategory : '');
+          // Look ahead for description (next non-empty, non-amount line)
+          let description = '';
+          for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+            const descLine = lines[j];
+            if (descLine && !descLine.match(/(?:PHP|₱)\s*[\d,.]+/i) && !/^(MONTHS|SCHEDULE|TOTAL|PREPARED BY|APPROVED BY|Republic of the Philippines|City of Naga|Barangay|OFFICE OF THE SANGGUNIANG KABATAAN)/i.test(descLine)) {
+              description = descLine;
+              break;
+            }
+          }
+          // Look ahead for schedule/months
+          let schedule = '';
+          for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+            const schedLine = lines[j];
+            if (schedLine && schedLine.match(/(January|February|March|April|May|June|July|August|September|October|November|December|\d{4}|2025)/i)) {
+              schedule = schedLine;
+              break;
+            }
+          }
+          if (schedule) description += (description ? ' ' : '') + '(' + schedule + ')';
           budgetItems.push({
-            category,
-            amount,
-            description: '',
+            category: lastCategory,
+            amount: lastAmount,
+            description: description || lastCategory,
             committee_responsible: '',
             committee_oversight: '',
-            abyip_ppa_activity: ''
+            abyip_ppa_activity: description ? `ABYIP - ${description}` : `ABYIP - ${lastCategory}`
           });
         }
       }
-      
       structuredData = { budgetItems };
       console.log('Fallback extracted data:', structuredData);
     }
