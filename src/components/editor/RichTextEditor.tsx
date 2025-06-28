@@ -3,6 +3,10 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import TextAlign from '@tiptap/extension-text-align';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableHeader from '@tiptap/extension-table-header';
+import TableCell from '@tiptap/extension-table-cell';
 import { Button } from '@/components/ui/button';
 import { DEFAULT_EDITOR_HEADER } from '@/lib/constants';
 import {
@@ -16,7 +20,10 @@ import {
     Undo,
     AlignLeft,
     AlignCenter,
-    AlignRight
+    AlignRight,
+    Table as TableIcon,
+    Plus,
+    Minus
 } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -34,6 +41,12 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
             }),
+            Table.configure({
+                resizable: true,
+            }),
+            TableRow,
+            TableHeader,
+            TableCell,
         ],
         content: fullContent,
         onUpdate: ({ editor }) => {
@@ -122,6 +135,36 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
                     </Button>
                 </div>
 
+                {/* Table Controls */}
+                <div className="flex gap-1 border-r pr-2 mr-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+                        title="Insert Table"
+                    >
+                        <TableIcon className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().addColumnBefore().run()}
+                        disabled={!editor.can().addColumnBefore()}
+                        title="Add Column Before"
+                    >
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => editor.chain().focus().deleteColumn().run()}
+                        disabled={!editor.can().deleteColumn()}
+                        title="Delete Column"
+                    >
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                </div>
+
                 {/* Block Elements */}
                 <div className="flex gap-1 border-r pr-2 mr-2">
                     <Button
@@ -193,4 +236,4 @@ export default function RichTextEditor({ content, onChange, placeholder }: RichT
             </div>
         </div>
     );
-} 
+}
